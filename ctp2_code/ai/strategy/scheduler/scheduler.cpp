@@ -1823,7 +1823,7 @@ bool Scheduler::HasAgentToExecute(const GOAL_TYPE & type) const
 		if(agent->Get_Is_Dead()) // We haven't removed those, yet.
 			continue;
 
-		if(agent->Get_Army()->TestOrderAny(order))
+		if(agent->Get_Army()->TestOrderAny(order) || agent->Get_Army()->TestCargoOrderAny(order))
 		{
 			return true;
 		}

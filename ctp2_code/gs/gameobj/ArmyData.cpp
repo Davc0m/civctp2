@@ -10221,7 +10221,7 @@ bool ArmyData::GetNextPathPoint(MapPoint & next_pos) const
 //
 // Name       : ArmyData::TestOrderAll
 //
-// Description: Test whether all units are capable of performing an order.
+// Description: Test whether all units can execute an order.
 //
 // Parameters : order_rec   : the order to test
 //
@@ -10236,7 +10236,6 @@ bool ArmyData::GetNextPathPoint(MapPoint & next_pos) const
 //----------------------------------------------------------------------------
 bool ArmyData::TestOrderAll(const OrderRecord *order_rec) const
 {
-
 	if(!m_nElements)
 		return(false);
 
@@ -10248,8 +10247,8 @@ bool ArmyData::TestOrderAll(const OrderRecord *order_rec) const
 			return false;
 	}
 
-	for(sint32 i = 0; i < m_nElements; i++) {
-
+	for(sint32 i = 0; i < m_nElements; i++)
+	{
 		const UnitRecord *unit_rec = m_array[i].GetDBRec();
 
 		if(order_rec->GetUnitPretest_NoFuelThenCrash()
@@ -10269,7 +10268,7 @@ bool ArmyData::TestOrderAll(const OrderRecord *order_rec) const
 //
 // Name       : ArmyData::TestOrderAny
 //
-// Description: Test whether some unit is capable of performing an order.
+// Description: Test whether some unit can execute an order.
 //
 // Parameters : order_rec   : the order to test
 //
@@ -10339,7 +10338,7 @@ bool ArmyData::TestCargoOrderAny(OrderRecord const * order_rec) const
 //
 // Name       : ArmyData::TestOrderUnit
 //
-// Description: Test whether a unit is capable of performing an order.
+// Description: Test whether a unit can execute an order.
 //
 // Parameters : order_rec   : the order to test
 //              unit_index  : the unit to test
@@ -10365,7 +10364,7 @@ bool ArmyData::TestOrderUnit(const OrderRecord *order_rec, uint32 unit_index) co
 //
 // Name       : ArmyData::TestOrder
 //
-// Description: Test whether this army is capable of performing an order.
+// Description: Test whether this army can execute an order.
 //
 // Parameters : order_rec   : the order to test
 //
@@ -10378,15 +10377,34 @@ bool ArmyData::TestOrderUnit(const OrderRecord *order_rec, uint32 unit_index) co
 //----------------------------------------------------------------------------
 ORDER_TEST ArmyData::TestOrder(const OrderRecord * order_rec) const
 {
-
 	return TestOrderHere( order_rec, m_pos );
+}
+
+//----------------------------------------------------------------------------
+//
+// Name       : ArmyData::CargoTestOrder
+//
+// Description: Test whether the cargo of this army can execute an order.
+//
+// Parameters : order_rec   : the order to test
+//
+// Globals    : -
+//
+// Returns    : ORDER_TEST  : legality result
+//
+// Remark(s)  : -
+//
+//----------------------------------------------------------------------------
+ORDER_TEST ArmyData::CargoTestOrder(const OrderRecord * order_rec) const
+{
+	return CargoTestOrderHere( order_rec, m_pos );
 }
 
 //----------------------------------------------------------------------------
 //
 // Name       : ArmyData::TestOrderHere
 //
-// Description: Test whether this army is capable of performing an order at a position.
+// Description: Test whether this army can execute an order at a position.
 //
 // Parameters : order_rec   : the order to test
 //              pos         : the position to test
@@ -10491,7 +10509,7 @@ ORDER_TEST ArmyData::TestOrderHere(const OrderRecord * order_rec, const MapPoint
 //  Name       : CargoTestOrderHere
 //
 //  Description: Test whether the cargo (units) being carried by this army's transports
-//               are capable of executing an order at a location.
+//               can execute an order at a location.
 //
 //  Parameters : const OrderRecord * order_rec : the order
 //               const MapPoint & pos          : the location
@@ -10567,7 +10585,7 @@ ORDER_TEST ArmyData::CargoTestOrderHere(const OrderRecord * order_rec, const Map
 //
 //  Name       : ArmyData::TargetValidForOrder
 //
-//  Description: test if whatever is at a target position passes an order's TargetPretest
+//  Description: Test if whatever is at a target position passes an order's TargetPretest
 //
 //  Parameters : const OrderRecord * order_rec,
 //               const MapPoint & pos,

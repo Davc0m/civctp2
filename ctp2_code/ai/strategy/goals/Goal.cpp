@@ -3295,7 +3295,7 @@ bool Goal::Pretest_Bid(const Agent_ptr agent_ptr, const MapPoint & target_pos) c
 		  g_theWorld->GetCity(target_pos).m_id != 0x0) )
 		return false;
 
-	if ( army->TestOrder(order_rec) == ORDER_TEST_ILLEGAL )
+	if ( army->TestOrder(order_rec) == ORDER_TEST_ILLEGAL && army->CargoTestOrder(order_rec) == ORDER_TEST_ILLEGAL)
 		return false;
 
 	if ( !army->CanEnter(target_pos) )

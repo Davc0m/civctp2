@@ -518,6 +518,7 @@ public:
     bool TestOrderUnit(const OrderRecord *order_rec, uint32 unit_index) const;
 
     ORDER_TEST TestOrder(const OrderRecord * order_rec) const;
+	ORDER_TEST CargoTestOrder(const OrderRecord * order_rec) const;
 
     ORDER_TEST TestOrderHere(const OrderRecord * order_rec, const MapPoint & pos) const;
 

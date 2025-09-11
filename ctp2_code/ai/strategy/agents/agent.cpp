@@ -577,13 +577,6 @@ void Agent::Follow_Path(const Path & found_path, const sint32 & order_type)
 }
 #endif
 
-bool Agent::Can_Execute_Order(const sint32 & order_type) const
-{
-	const OrderRecord *order = g_theOrderDB->Get(order_type);
-
-	return m_army->TestOrderAll(order);
-}
-
 void Agent::Execute_Order(const sint32 & order_type, const MapPoint & target_pos)
 {
 	Assert(Get_Can_Be_Executed());

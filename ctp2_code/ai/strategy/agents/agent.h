@@ -144,8 +144,6 @@ public:
 	void Follow_Path(const Path & found_path, const sint32 & order_type);
 #endif
 
-	bool Can_Execute_Order(const sint32 & order_type) const;
-
 	void Execute_Order(const sint32 & order_type, const MapPoint & order_pos);
 
 	void Group_Order();
