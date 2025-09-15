@@ -944,6 +944,10 @@ void Diplomat::BeginTurn()
 		NextDiplomaticState(foreignerId);
 	}
 
+	// Already done in UpdateAttributes, but RecomputeRegard changes the result
+	// Unclear whether there are some other things that change the result
+	// So just recompute this before we need it in ComputeIncursionPermission
+	ComputeAllDesireWarWith();
 	ComputeIncursionPermission();
 
 	ExecutePersistantAgreements();
@@ -1711,6 +1715,9 @@ void Diplomat::Execute_Proposal(const PLAYER_INDEX & sender,
 		{
 			AgreementMatrix::s_agreements.
 				CancelAgreement(sender, receiver, PROPOSAL_TREATY_DECLARE_WAR);
+	
+			Diplomat::GetDiplomat(sender).UpdateDesireWarWith(receiver);
+			Diplomat::GetDiplomat(receiver).UpdateDesireWarWith(sender);
 
 			// Maybe add to CancelAgreement as message from DB
 			SlicObject *so = new SlicObject("401WarOver");
@@ -1831,6 +1838,9 @@ void Diplomat::DeclareWar(const PLAYER_INDEX foreignerId)
 
 	player_ptr->CloseEmbassy(foreignerId);
 	foreigner_ptr->CloseEmbassy(m_playerId);
+
+	Diplomat::GetDiplomat(foreignerId).UpdateDesireWarWith(m_playerId);
+	UpdateDesireWarWith(foreignerId);
 }
 
 void Diplomat::SetEmbargo(const PLAYER_INDEX foreignerId, const bool state)
@@ -5157,6 +5167,7 @@ void Diplomat::SendGreeting(const PLAYER_INDEX & foreignerId)
 	so->AddAction(buf);
 	g_slicEngine->Execute(so);
 }
+
 bool Diplomat::HasWarOrDesiresPreemptivelyWith(const PLAYER_INDEX foreignerId) const
 {
 	return g_player[m_playerId]->HasWarWith(foreignerId) || (/*m_personality->GetAlignmentEvil() || m_personality->GetTrustworthinessChaotic() &&*/ DesireWarWith(foreignerId));
@@ -5257,6 +5268,12 @@ void Diplomat::ComputeAllDesireWarWith()
 	}
 }
 
+void Diplomat::UpdateDesireWarWith(const PLAYER_INDEX foreignerId)
+{
+	m_desireWarWith[foreignerId] =
+		(foreignerId != m_playerId) && ComputeDesireWarWith(foreignerId);
+}
+
 sint32 Diplomat::GetWeakestEnemy() const
 {
 	sint32 weakestEnemy    = -1;
@@ -5288,6 +5305,9 @@ bool Diplomat::IsBestHotwarEnemy(const PLAYER_INDEX foreignerId) const
 {
 	Player *    foreigner_ptr = g_player[foreignerId];
 	if (foreigner_ptr == NULL)
+		return false;
+
+	if (!foreigner_ptr->HasContactWith(m_playerId))
 		return false;
 
 	DIPLOMATIC_STRENGTH lowest_relative_strength    = foreigner_ptr->GetRelativeStrength(m_playerId);

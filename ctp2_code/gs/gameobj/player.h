@@ -931,6 +931,7 @@ public:
 	bool GetDeepOceanVisible(void) const { return m_deepOceanVisible != FALSE; }
 	void SetDeepOceanVisible(BOOL visible) { m_deepOceanVisible = visible; }
 
+	void ContactKilled(PLAYER_INDEX with);
 	void ContactMade(PLAYER_INDEX with);
 	bool HasSeen(PLAYER_INDEX player);
 	bool HasContactWith(PLAYER_INDEX player) const;

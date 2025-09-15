@@ -420,6 +420,7 @@ public:
 
 	void ComputeIncursionPermission();
 	void ComputeAllDesireWarWith();
+	void UpdateDesireWarWith(const PLAYER_INDEX foreignerId);
 
 	bool IsBestHotwarEnemy(const PLAYER_INDEX foreignerId) const;
 	sint32 GetWeakestEnemy() const;

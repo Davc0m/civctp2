@@ -7790,6 +7790,14 @@ void Player::RegisterAttack(PLAYER_INDEX against)
 #endif
 }
 
+void Player::ContactKilled(PLAYER_INDEX with)
+{
+	if(with == m_owner)
+		return;
+
+	m_contactedPlayers &= ~(1 << with);
+}
+
 void Player::ContactMade(PLAYER_INDEX with)
 {
 	if(with == m_owner)
@@ -7809,6 +7817,8 @@ void Player::ContactMade(PLAYER_INDEX with)
 					Diplomat::GetDiplomat(m_owner).SendGreeting(with);
 					Diplomat::GetDiplomat(with).RecomputeRegard();
 					Diplomat::GetDiplomat(m_owner).RecomputeRegard();
+					Diplomat::GetDiplomat(with).UpdateDesireWarWith(m_owner);
+					Diplomat::GetDiplomat(m_owner).UpdateDesireWarWith(with);
 				}
 			}
 		}
@@ -8680,6 +8690,7 @@ bool Player::HasPeaceTreatyWith(PLAYER_INDEX otherPlayer) const
 	    &&  g_player[otherPlayer] != NULL
 	    && AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_PEACE);
 }
+
 //True if player has at least one of trade/military/research/pollution pact with other player
 bool Player::HasAnyPactWith(PLAYER_INDEX otherPlayer) const
 {
@@ -8695,7 +8706,6 @@ bool Player::HasAnyPactWith(PLAYER_INDEX otherPlayer) const
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_RESEARCH_PACT)
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_MILITARY_PACT)
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_POLLUTION_PACT));
-
 }
 
 void player_ActivateSpaceButton(sint32 owner)
@@ -8710,7 +8720,6 @@ void player_ActivateSpaceButton(sint32 owner)
 
 void Player::ResetVision()
 {
-
 	m_vision->SetTheWholeWorldUnseen();
 	sint32 j;
 

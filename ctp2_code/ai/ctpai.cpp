@@ -979,14 +979,15 @@ void CtpAi::Load(CivArchive & archive)
 {
 	Initialize(false);
 
+	// Analyse the map first, we need that to compute desire war in Diplomat::Load from Diplomat::LoadAll
+	SPLASH_STRING("Analyse Map...");
+	MapAnalysis::GetMapAnalysis().BeginTurn();
+
 	SPLASH_STRING("Load Diplomacy...");
 	Diplomat::LoadAll(archive);
 
 	SPLASH_STRING("Compute good values...");
 	g_theWorld->ComputeGoodsValues();
-
-	SPLASH_STRING("Analyse Map...");
-	MapAnalysis::GetMapAnalysis().BeginTurn();
 
 	SPLASH_STRING("Assign goals...");
 	for (PLAYER_INDEX playerId = 0; playerId < s_maxPlayers; playerId++)
@@ -1056,7 +1057,11 @@ void CtpAi::RemovePlayer(const PLAYER_INDEX deadPlayerId)
 	for (PLAYER_INDEX player = 0; player < s_maxPlayers; ++player)
 	{
 		if (g_player[player])
+		{
 			Diplomat::GetDiplomat(player).InitForeigner(deadPlayerId);
+			g_player[player]->ContactKilled(deadPlayerId);
+			g_player[player]->CloseEmbassy(deadPlayerId);
+		}
 	}
 
 	AgreementMatrix::s_agreements.ClearAgreementsInvolving(deadPlayerId);
@@ -1090,6 +1095,15 @@ void CtpAi::AddPlayer(const PLAYER_INDEX newPlayerId)
 	for (PLAYER_INDEX player = 0; player < s_maxPlayers; ++player)
 	{
 		Diplomat::GetDiplomat(player).InitForeigner(newPlayerId);
+		if (g_player[player])
+		{
+			// Reset conact made as this might not have been
+			// handled in RemovePlayer from save games of
+			// previous versions
+			// Also true for embassies
+			g_player[player]->ContactKilled(newPlayerId);
+			g_player[player]->CloseEmbassy(newPlayerId);
+		}
 	}
 }
 
