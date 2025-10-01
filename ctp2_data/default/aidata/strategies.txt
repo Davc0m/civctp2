@@ -384,6 +384,7 @@ STRATEGY_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
@@ -1537,6 +1538,7 @@ STRATEGY_SCIENTIST_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
@@ -2041,6 +2043,7 @@ STRATEGY_MILITARIST_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
@@ -2553,6 +2556,7 @@ STRATEGY_ECONOMIC_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
@@ -3056,6 +3060,7 @@ STRATEGY_ECOTOPIAN_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
@@ -3559,6 +3564,7 @@ STRATEGY_DIPLOMATIC_DEFAULT {
     BuildListSequenceElement {
         Priority 12000
         BuildListSequence BUILD_LIST_SEQUENCE_CITIES_AT_MAX_SIZE
+        HasBuildingsThenStop BUILDING_BUILD_LIST_MAXIUM_SIZED_CITIES
         Advice BUILD_GROWTH_ADVICE
         BeforeMaxCitySize 2
     }
