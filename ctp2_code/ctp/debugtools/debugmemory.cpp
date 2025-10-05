@@ -643,7 +643,7 @@ MemPtr DebugMemory_GuardedBlockAlloc (
 	header->line_number          = module_line;
 	header->size                 = size;
 	header->allocated_after_open = debug_memory->open;
-	DebugCallStack_Save (header->call_stack.function, CALL_STACK_SIZE, 0);
+	DebugCallStack_Save (header->call_stack.function, CALL_STACK_SIZE, 0, 0);
 
 	header->prev = NULL;
 	header->next = heap->first_memory_block;

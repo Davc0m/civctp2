@@ -416,7 +416,11 @@ void DebugCallStack_DumpAddress (LogClass log_class, size_t address)
 
 	caller_name = Debug_FunctionNameAndOffsetGet (address, &offset);
 
+#if SIZE_MAX == _UI64_MAX
+	LOG_INDIRECT (NULL, 0, (log_class, "  0x%016x  [%s + 0x%x]\n", address, caller_name, offset));
+#elif SIZE_MAX == UINT_MAX
 	LOG_INDIRECT (NULL, 0, (log_class, "  0x%08x  [%s + 0x%x]\n", address, caller_name, offset));
+#endif
 }
 
 void DebugCallStack_Dump (LogClass log_class)
@@ -553,7 +557,7 @@ void DebugCallStack_DumpFrom (LogClass log_class, size_t base_pointer)
 #endif
 }
 
-void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
+void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp, DWORD framesToSkip)
 {
 #if defined(_MSC_VER) && defined(_X86_)
 	size_t base_pointer;
@@ -564,7 +568,15 @@ void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
 	if(Ebp == 0)
 	{
 #ifdef WIN32
+#if SIZE_MAX == _UI64_MAX
+		// None of those really work and CaptureStackBackTrace is not optimal either
+//		base_pointer = (size_t)_AddressOfReturnAddress();
+//		base_pointer = (size_t)_ReturnAddress();
+//		asm("\t movq %%rbp,%0" : "=r"(base_pointer));
+//		asm("mov %%rbp, %0" : "=r"(base_pointer));
+#elif SIZE_MAX == UINT_MAX
 		__asm mov base_pointer, ebp;
+#endif
 #else // if GCC 64 bit
 		__asm("\t movq %%rbp,%0" : "=r"(base_pointer));
 #endif
@@ -578,6 +590,12 @@ void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
 	caller = 0;
 	index = 0;
 
+#if SIZE_MAX == _UI64_MAX
+	size_t pointerSize = 8; // 8 bytes for 64 bit
+#elif SIZE_MAX == UINT_MAX
+	size_t pointerSize = 4; // 4 bytes for 32 bit
+#endif
+
 	while ((!finished) && ( index < number))
 	{
 
@@ -590,7 +608,7 @@ void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
 #ifdef WIN32
 			__try
 			{
-				caller = *((size_t *) (base_pointer + 4));
+				caller = *((size_t *) (base_pointer + pointerSize));
 			}
 			__except (MemoryAccessExceptionFilter (GetExceptionInformation()))
 			{
@@ -602,7 +620,7 @@ void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
 			// Fortunately, all this can be replaced by backtrace.
 			try
 			{
-				caller = *((size_t *) (base_pointer + 8)); // 8 bytes for 64 bit
+				caller = *((size_t *) (base_pointer + pointerSize));
 			}
 			catch(...)
 			{
@@ -634,9 +652,9 @@ void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp)
 	}
 #elif defined(_MSC_VER)
 	HANDLE process = GetCurrentProcess();
-	SymInitialize(process, NULL, TRUE);
+//	SymInitialize(process, NULL, TRUE);
 
-	size_t cap = CaptureStackBackTrace(0, number, (void**)call_stack, NULL);
+	size_t cap = CaptureStackBackTrace(framesToSkip, number, (void**)call_stack, NULL);
 	for (size_t i = cap; i < number; i++)
 	{
 		call_stack[i] = 0;
@@ -660,7 +678,11 @@ void DebugCallStack_Show  (LogClass log_class, size_t *call_stack, int number)
 
 		caller_name = Debug_FunctionNameAndOffsetGet (caller, &offset);
 
+#if SIZE_MAX == _UI64_MAX
+		LOG_INDIRECT (NULL, 0, (log_class, "  0x%016x  [%s + 0x%x]\n", caller, caller_name, offset));
+#elif SIZE_MAX == UINT_MAX
 		LOG_INDIRECT (NULL, 0, (log_class, "  0x%08x  [%s + 0x%x]\n", caller, caller_name, offset));
+#endif
 
 		index ++;
 	}
@@ -705,8 +727,11 @@ void DebugCallStack_ShowToFile  (LogClass log_class, size_t *call_stack, int num
 			strcpy(allocator_name, caller_name);
 		}
 
+#if SIZE_MAX == _UI64_MAX
+		fprintf(file, "0x%016zx [%s+0x%zx] / ", caller, caller_name, offset);
+#elif SIZE_MAX == UINT_MAX
 		fprintf(file, "0x%08zx [%s+0x%zx] / ", caller, caller_name, offset);
-
+#endif
 		index ++;
 	}
 
@@ -771,7 +796,7 @@ char * c3debug_StackTrace(void)
 
 	size_t callstack_function[k_CALL_STACK_SIZE];
 
-	DebugCallStack_Save(callstack_function, k_CALL_STACK_SIZE, 0);
+	DebugCallStack_Save(callstack_function, k_CALL_STACK_SIZE, 0, 0);
 
 	s_stackTraceString[0] = 0;
 
@@ -784,7 +809,11 @@ char * c3debug_StackTrace(void)
 
 		caller_name = Debug_FunctionNameAndOffsetGet (caller, &offset);
 
+#if SIZE_MAX == _UI64_MAX
+		sprintf(function_name, "  0x%016zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#elif SIZE_MAX == UINT_MAX
 		sprintf(function_name, "  0x%08zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#endif
 
 		if (strlen(s_stackTraceString) + strlen(function_name) < k_STACK_TRACE_LEN - 1 )
 			strcat(s_stackTraceString, function_name);
@@ -813,11 +842,15 @@ char * c3debug_ExceptionStackTrace(LPEXCEPTION_POINTERS exception)
 #if defined(_X86_)
 	callstack_function[0] = exception->ContextRecord->Eip;
 
-	DebugCallStack_Save(&callstack_function[1], k_CALL_STACK_SIZE - 1, exception->ContextRecord->Ebp);
+	DebugCallStack_Save(&callstack_function[1], k_CALL_STACK_SIZE - 1, exception->ContextRecord->Ebp, 0);
 #else
-	callstack_function[0] = NULL;
+	callstack_function[0] = exception->ContextRecord->Rip;
 
-	DebugCallStack_Save(&callstack_function[1], k_CALL_STACK_SIZE - 1, 0);
+	// Skip the first 9 frames as they refer to debug handling code including
+	// the top frame where the exception happened, which we already got from Rip.
+	// In the debug version we get the stack trace, but in the release version
+	// we get nothing more. Actually, it would just return the skipped frames if we did not skip them.
+	DebugCallStack_Save(&callstack_function[1], k_CALL_STACK_SIZE - 1, exception->ContextRecord->Rbp, 9);
 #endif
 
 	s_stackTraceString[0] = 0;
@@ -832,11 +865,19 @@ char * c3debug_ExceptionStackTrace(LPEXCEPTION_POINTERS exception)
 			size_t offset;
 			caller_name = Debug_FunctionNameAndOffsetGet (caller, &offset);
 
+#if SIZE_MAX == _UI64_MAX
+			sprintf(function_name, "  0x%016zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#elif SIZE_MAX == UINT_MAX
 			sprintf(function_name, "  0x%08zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#endif
 		}
 		else
 		{
+#if SIZE_MAX == _UI64_MAX
+			sprintf(function_name, "  0x%016zx\n", caller);
+#elif SIZE_MAX == UINT_MAX
 			sprintf(function_name, "  0x%08zx\n", caller);
+#endif
 		}
 
 		if (strlen(s_stackTraceString) + strlen(function_name) < k_STACK_TRACE_LEN - 1 )
@@ -867,11 +908,19 @@ char * c3debug_ExceptionStackTraceFromFile(FILE *f)
 	while(!feof(f))
 	{
 		if(fgets(line, 1024, f)) {
+#if SIZE_MAX == _UI64_MAX
+			if(sscanf(line, "  0x%016zx", &caller) == 1)
+#elif SIZE_MAX == UINT_MAX
 			if(sscanf(line, "  0x%08zx", &caller) == 1)
+#endif
 			{
 				caller_name = Debug_FunctionNameAndOffsetGet(caller, &offset);
 
+#if SIZE_MAX == _UI64_MAX
+				sprintf(function_name, "  0x%016zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#elif SIZE_MAX == UINT_MAX
 				sprintf(function_name, "  0x%08zx  [%s + 0x%zx]\n", caller, caller_name, offset);
+#endif
 
 				if (strlen(s_stackTraceString) + strlen(function_name) < k_STACK_TRACE_LEN - 1 )
 					strcat(s_stackTraceString, function_name);
@@ -908,7 +957,7 @@ static int qsortDebugCallStack(const void *a,const void *b)
 
 void cDebugCallStackSet::Add()
 {
-	DebugCallStack_Save(m_curStack,m_depth+2,0);
+	DebugCallStack_Save(m_curStack, m_depth+2, 0, 0);
 
 	int i;
 	for (i=0;i<m_numStacks;++i)
