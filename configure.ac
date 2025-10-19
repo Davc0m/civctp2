@@ -83,17 +83,19 @@ AC_PATH_PROGS(VIEWPDF,acroread gpdf)
 ctp2_code='$(top_srcdir)/ctp2_code'
 AC_SUBST(ctp2_code)
 
+## These are overwritten ##
 C_WARNINGS="-Wunknown-pragmas"
 CXX_WARNINGS="$C_WARNINGS -Wnon-virtual-dtor"
 COMMON_WARNINGS="-pedantic -Wchar-subscripts -Wcomment -Wconversion -Wendif-labels -Wformat -Wformat-y2k -Wformat-nonliteral -Wformat-security -Wimplicit -Winit-self -Wmissing-braces -Wpointer-arith -Wreturn-type -Wsign-compare -Wunknown-pragmas"
 C_WARNINGS="$COMMON_WARNINGS -Wmain -Wmissing-prototypes -Wnested-externs -Wnonnull -Wsequence-point -Wstrict-prototypes"
 CXX_WARNINGS="$COMMON_WARNINGS -Winvalid-offsetof"
+#########################
 
 C_WARNINGS="-Wall -Wno-unused-variable -Wno-parentheses -Wno-format-overflow -Wno-deprecated-declarations -Wno-comment -Wno-char-subscripts"
 CXX_WARNINGS="-Wall -Wno-unused-variable -Wno-parentheses -Wno-class-memaccess -Wno-format-overflow -Wno-deprecated-declarations -Wno-comment -Wno-char-subscripts"
 
-CFLAGS="$C_WARNINGS -fms-extensions -fmessage-length=0 $CFLAGS"
-CXXFLAGS="$CXX_WARNINGS -fpermissive -fms-extensions -fmessage-length=0 -frtti -fexceptions $CXXFLAGS"
+CFLAGS="$C_WARNINGS -fms-extensions -fmessage-length=0 -fuse-ld=gold $CFLAGS"
+CXXFLAGS="$CXX_WARNINGS -fpermissive -fms-extensions -fmessage-length=0 -frtti -fexceptions -fuse-ld=gold $CXXFLAGS"
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(CXXFLAGS)
