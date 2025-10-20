@@ -1240,9 +1240,13 @@ static void main_CivExceptionHandler(int sig)
 	}
 
 #if defined(_DEBUG) || defined(USE_LOGGING)
+	// Print to file and stderr
+	fprintf(stderr, "Linux Version %s\n", Os::GetExeVersion().c_str());
+	fprintf(stderr, "Signal '%s' is send.\n", s);
 	DPRINTF(k_DBG_FIX, ("Signal '%s' is send.\n", s));
 	s = c3debug_StackTrace();
 	DPRINTF(k_DBG_FIX, ("Exception Stack Trace:\n%s\n", s));
+	fprintf(stderr, "%s\n", c3debug_StackTrace());
 
 #else // _DEBUG
 
@@ -1254,6 +1258,7 @@ static void main_CivExceptionHandler(int sig)
 		if (!crashLog)
 			crashLog = fopen("crash.txt", "w");
 
+		// Print to file and stderr
 		if (crashLog)
 		{
 			fprintf(crashLog, "Linux Version %s\n", Os::GetExeVersion().c_str());
@@ -1261,6 +1266,9 @@ static void main_CivExceptionHandler(int sig)
 			fprintf(crashLog, "%s\n", c3debug_StackTrace());
 			fclose(crashLog);
 		}
+		fprintf(stderr, "Linux Version %s\n", Os::GetExeVersion().c_str());
+		fprintf(stderr, "Signal '%s' is send.\n", s);
+		fprintf(stderr, "%s\n", c3debug_StackTrace());
 	}
 
 #endif // _DEBUG
