@@ -573,7 +573,7 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 
 				combinedUtility += matchUtility;
 				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-				            ("\t\t[%3d] match = %d %s Army: %9x Agent: %9x (%3d, %3d)\t%20s (units %2d, cargo %2d)\n", 
+				            ("\t\t[%3d] match = %d %s Army: %9x Agent: %9x (%3d, %3d)\t%20s Name: \t%16s (units %2d, cargo %2d)\n",
 				             count,
 				             matchUtility,
 				             g_theGoalDB->Get(m_goal_type)->GetNameText(),
@@ -582,6 +582,7 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 				             match_iter->Get_Agent()->Get_Pos().x,
 				             match_iter->Get_Agent()->Get_Pos().y,
 				             g_theUnitDB->GetNameStr(match_iter->Get_Agent()->Get_Army()->Get(0).GetType()),
+				             match_iter->Get_Agent()->Get_Army()->GetName(),
 				             match_iter->Get_Agent()->Get_Army()->Num(),
 				             match_iter->Get_Agent()->Get_Army()->GetCargoNum()));
 				++count;
@@ -1480,7 +1481,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 
 	if(agent_ptr->Get_Is_Dead())
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Is dead\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Is dead\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 		return Goal::BAD_UTILITY;
 	}
 
@@ -1493,7 +1494,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	{
 		if(dest_pos != curr_pos)
 		{
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Needed for garrison, but not in target city\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Needed for garrison, but not in target city\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 		else
@@ -1512,7 +1513,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	// This is expensive, so remove first the garrison units.
 	if(!Pretest_Bid(agent_ptr, dest_pos))
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: No pretest bid\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, No pretest bid\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 		return Goal::BAD_UTILITY;
 	}
 
@@ -1528,7 +1529,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	       )
 	  )
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: No transport allowed\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, No transport allowed\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 		return Goal::BAD_UTILITY;
 	}
 
@@ -1569,7 +1570,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 
 		if (!isspecial || maxattack > 0 || haszoc)
 		{
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: IsNotSpecial, CanAttack, HasZOC\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, IsNotSpecial, CanAttack, HasZOC\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 	}
@@ -1625,7 +1626,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 
 	if(agent_ptr->Get_Army()->HasCargo() && !CanReachTargetContinent(agent_ptr))
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Cargo cannot reach target continent\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Cargo cannot reach target continent\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 		return Goal::BAD_UTILITY;
 	}
 
@@ -1640,7 +1641,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		if(g_theGoalDB->Get(m_goal_type)->GetNeedsRoom()
 		&& agent_ptr->Get_Army()->Num() + g_theWorld->GetCell(dest_pos)->GetNumUnits() > k_MAX_ARMY_SIZE)
 		{
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Not enough room in target city\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Not enough room in target city\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 
@@ -1683,14 +1684,14 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 			else
 			{
 				// If there is a settler in the army...
-				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Do not fight with a settler in the army\n"));
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Do not fight with a settler in the army\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 				return Goal::BAD_UTILITY;
 			}
 		}
 
 		if(m_target_army.IsValid() && !agent_ptr->Get_Army()->CanFight(*m_target_army.AccessData()))
 		{
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Army cannot fight\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Army cannot fight\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 
@@ -1720,7 +1721,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		if(agent_ptr->Get_Army()->CanSettle()) // CargoCanSettle
 		{
 			// If there is a settler in the army...
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Settler in the army\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Settler in the army\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 	}
@@ -1825,7 +1826,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 			&&   g_theWorld->GetCell(dest_pos)->GetNumUnits() > 0
 			&&  !agent_ptr->Get_Army()->CanBeachAssault())
 			){
-				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Army cannot beach assault\n"));
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Army cannot beach assault\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 				return Goal::BAD_UTILITY;
 			}
 		}
@@ -1837,7 +1838,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		&&  g_theWorld->GetCell(dest_pos)->GetNumUnits() > 0
 		&& !agent_ptr->Get_Army()->CanSomeCargoBeachAssault())
 		{
-			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: Cargo cannot beach assault\n"));
+			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\tGoal::BAD_UTILITY: \t%s, \t%16s, Cargo cannot beach assault\n", g_theGoalDB->Get(m_goal_type)->GetNameText(), agent_ptr->Get_Army()->GetName()));
 			return Goal::BAD_UTILITY;
 		}
 	}
@@ -1902,7 +1903,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	MapPoint target_pos = Get_Target_Pos();
 
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%s (%3d,%3d) (%3d,%3d),\t%8d,\t%8d,\t%12f,\t%12f,\t%12d,\t%12f,\t%12f,\t%12f,\t%8d,\t%12f,\t%12f,\t%12f,\t%12d,\t%9x,\t%6d,\t%20s,\t%16s,\t%16s \n",
+	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%s (%3d,%3d) (%3d,%3d),\t%8d,\t%8d,\t%12f,\t%12f,\t%12d,\t%12f,\t%12f,\t%12f,\t%8d,\t%12f,\t%12f,\t%12f,\t%12d,\t%9x,\t%6d,\t%20s,\t%16s,\t%16s,\t%16s \n",
 	this,                                          // This goal
 	agent_ptr->Get_Army().m_id,                    // The army
 	agent_ptr,                                     // The agent
@@ -1929,6 +1930,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	agent_ptr->Get_Goal(),                         // The goal to that this agent is asigned to
 	tieBreaker,
 	g_theUnitDB->GetNameStr(agent_ptr->Get_Army()->Get(0).GetType()),
+	agent_ptr->Get_Army()->GetName(),
 	(g_theWorld->HasCity(curr_pos) ? g_theWorld->GetCity(curr_pos).GetName() : "field"),
 	(g_theWorld->HasCity(target_pos) ? g_theWorld->GetCity(target_pos).GetName() : "field")
 	));
@@ -3368,8 +3370,8 @@ void Goal::Log_Debug_Info(const int &log) const
 		{
 			SQUAD_CLASS goal_squad_class = g_theGoalDB->Get(m_goal_type)->GetSquadClass();
 			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-				("\t\t[%3d] match=%d %s (agent: %10x), goal class=%3x, squad class=%3x, test class=%d\t",
-					count++, value, g_theGoalDB->Get(m_goal_type)->GetNameText(), agent, goal_squad_class, agent->Get_Squad_Class(), ((goal_squad_class & agent->Get_Squad_Class()) == goal_squad_class)));
+				("\t\t[%3d] match=%d %s (agent: %10x, \t%16s), goal class=%3x, squad class=%3x, test class=%d\t",
+					count++, value, g_theGoalDB->Get(m_goal_type)->GetNameText(), agent, agent->Get_Army()->GetName(), goal_squad_class, agent->Get_Squad_Class(), ((goal_squad_class & agent->Get_Squad_Class()) == goal_squad_class)));
 
 			agent->Log_Debug_Info(k_DBG_SCHEDULER_DETAIL, this);
 		}
@@ -4770,8 +4772,8 @@ bool Goal::FindTransporters(const Agent_ptr & agent_ptr, std::list< std::pair<Ut
 		possible_transport->Get_Army()->GetCargo(transports, max_slots, empty_slots);
 
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, possible_transport->Get_Army().m_id,
-			("GOAL %x Agent %x (%d): transports: %d, max_slots: %d, empty_slots %d\n",
-			 this, possible_transport, m_goal_type, transports, max_slots, empty_slots));
+			("GOAL %x Agent %x (%d): transports: %d, max_slots: %d, empty_slots %d, Army Name:\t%16s\n",
+			 this, possible_transport, m_goal_type, transports, max_slots, empty_slots, possible_transport->Get_Army()->GetName()));
 
 		if(max_slots <= 0)
 			continue;
