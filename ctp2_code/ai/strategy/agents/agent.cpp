@@ -262,8 +262,9 @@ void Agent::Log_Debug_Info(const int & log, const Goal * const goal) const
 	           m_playerId,
 	           goal != NULL ? goal->Get_Goal_Type() : -1,
 	           -1,
-	           ("\t\t   Agent: handle=%x,\tclass=%x,\t(x=%3d,y=%3d),\t (is_used=%d) \t (by_this=%d) \t %20s (%2d units, %2d cargo) \t in %s\n",
+	           ("\t\t   Agent: handle=%x,\tArmy name: %s,\tclass=%x,\t(x=%3d,y=%3d),\t (is_used=%d) \t (by_this=%d) \t %20s (%2d units, %2d cargo) \t in %s\n",
 	            m_army.m_id,
+	            m_army->GetName(),
 	            m_squad_class,
 	            pos.x,
 	            pos.y,
@@ -770,7 +771,7 @@ sint32 Agent::DisbandObsoleteArmies()
 
 	if (count > 0)
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER, m_army.GetOwner(), Get_Goal_Type(), -1, ("*** Disbanding Army:\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER, m_army.GetOwner(), Get_Goal_Type(), -1, ("*** Disbanding Army: %s\n", m_army->GetName()));
 		Log_Debug_Info(k_DBG_SCHEDULER, Get_Goal());
 	}
 
@@ -809,6 +810,7 @@ sint32 Agent::DisbandObsoleteUnits()
 
 	if (city_unit.m_id == 0)
 	{
+		Unit nearestCity;
 		MapPoint nearest_city_pos;
 		sint32 nearest_distance = g_mp_size.x + g_mp_size.y;
 		sint32 distance;
@@ -824,6 +826,7 @@ sint32 Agent::DisbandObsoleteUnits()
 			distance = MapPoint::GetSquaredDistance(city_unit.RetPos(), pos);
 			if (distance < nearest_distance)
 			{
+				nearestCity      = city_unit;
 				nearest_city_pos = city_unit.RetPos();
 				nearest_distance = distance;
 				found = true;
@@ -836,7 +839,9 @@ sint32 Agent::DisbandObsoleteUnits()
 			const OrderRecord *order_rec = CtpAi::GetDisbandArmyOrder();
 
 			PerformOrderHere(order_rec, &found_path);
-			g_graphicsOptions->AddTextToArmy(m_army, "DISBAND", 255, Get_Goal_Type());
+			MBCHAR * myString = new MBCHAR[255];
+			sprintf(myString, "Move to DISBAND @ %s", nearestCity.CD()->GetName());
+			g_graphicsOptions->AddTextToArmy(m_army, myString, 255, Get_Goal_Type());
 		}
 		return 0;
 	}
