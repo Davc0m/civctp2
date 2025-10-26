@@ -8064,7 +8064,7 @@ void ArmyData::MoveUnits(const MapPoint &pos)
 		}
 		//end EMOD
 
-		if(g_theWorld->GetCell(pos)->GetNumUnits() >= k_MAX_ARMY_SIZE)
+		if(g_theWorld->GetCell(pos)->GetNumUnits() > k_MAX_ARMY_SIZE)
 		{
 			g_gevManager->AddEvent(GEV_INSERT_AfterCurrent, GEV_KillUnit,
 			                       GEA_Unit, m_array[i],
