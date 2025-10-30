@@ -56,7 +56,6 @@ public:
 	              const MapPoint & start,
 	              const MapPoint & dest,
 	              const bool & check_dest,
-	              const sint32 & trans_dest_cont,
 	              const float & trans_max_r,
 	              Path & new_path,
 	              float & total_cost,

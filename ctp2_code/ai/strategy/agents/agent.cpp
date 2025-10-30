@@ -305,7 +305,6 @@ bool Agent::FindPathToBoard(const uint32 & move_intersection, const MapPoint & d
 	m_army->MinMovementPoints(move_points);
 
 	double trans_max_r = 100.0 / move_points;
-	sint32 cont = g_theWorld->GetContinent(dest_pos);
 
 	if (RobotAstar2::s_aiPathing.FindPath( RobotAstar2::PATH_TYPE_TRANSPORT,
 										   m_army,
@@ -313,7 +312,6 @@ bool Agent::FindPathToBoard(const uint32 & move_intersection, const MapPoint & d
 										   start_pos,
 										   dest_pos,
 										   check_dest,
-										   cont,
 										   static_cast<float>(trans_max_r),
 										   found_path,
 										   total_cost,
@@ -353,8 +351,6 @@ bool Agent::FindPath(const Army & army, const MapPoint & target_pos, const bool 
 		return true;
 	}
 
-	sint32 cont = g_theWorld->GetContinent(target_pos);
-
 	double trans_max_r = 0.4;
 	bool tmp_check_dest = check_dest;
 	RobotAstar2::PathType path_type;
@@ -382,7 +378,6 @@ bool Agent::FindPath(const Army & army, const MapPoint & target_pos, const bool 
 										   start_pos,
 										   target_pos,
 										   tmp_check_dest,
-										   cont,
 										   static_cast<float>(trans_max_r),
 										   found_path,
 										   total_cost ))

@@ -2112,7 +2112,6 @@ void CtpAi::RefuelAirplane(const Army & army)
 		start_pos,
 		refueling_pos,
 		true,
-		g_theWorld->GetContinent(refueling_pos),
 		trans_max_r,
 		new_path,
 		total_cost))
