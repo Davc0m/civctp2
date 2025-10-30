@@ -745,6 +745,28 @@ BOOL ChatWindow::CheckForEasterEggs(const MBCHAR *s)
 		}
 	}
 
+	else if (!strncmp(s, "/showconts", 10) && !g_network.IsActive())
+	{
+		g_graphicsOptions->CellTextOn();
+
+		if (g_selected_item != NULL)
+		{
+			char buf[1024];
+			sprintf(buf, "Showing continent numbers");
+			g_chatBox->AddLine(g_selected_item->GetCurPlayer(), buf);
+
+			MapPoint pos;
+			for (pos.x = 0; pos.x < g_theWorld->GetWidth(); pos.x++)
+			{
+				for (pos.y = 0; pos.y < g_theWorld->GetHeight(); pos.y++)
+				{
+					char buf[10];
+					sprintf(buf, "%d", g_theWorld->GetCell(pos)->GetContinent());
+					g_graphicsOptions->AddTextToCell(pos, buf, 255);
+				}
+			}
+		}
+	}
 	else if(!strncmp(s, "/beginscheduler", 15)  && !g_network.IsActive())
 	{
 		const MBCHAR *arg = s + 15;
