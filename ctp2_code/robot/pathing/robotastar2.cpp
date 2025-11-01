@@ -88,7 +88,9 @@ bool RobotAstar2::TransportPathCallback (const bool & can_enter,
 			           g_theWorld->IsLand(prev)
 			        || g_theWorld->IsMountain(prev)
 			       )
-			    && g_theWorld->GetContinent(prev) == m_transDestCont
+			    && !g_theWorld->IsWater(prev) // Ocean city and tunnel tiles are both land and sea, just make sure the previous one was not one of those
+			    && !g_theWorld->IsShallowWater(prev)
+			    &&  g_theWorld->GetContinent(prev) == m_transDestCont
 			  )
 			{
 				// Return invalid if we leave the target continent
@@ -110,7 +112,7 @@ bool RobotAstar2::TransportPathCallback (const bool & can_enter,
 			       )
 			    && (
 			          ( g_theWorld->IsOccupiedByForeigner  (pos, m_owner) // If the target is a city
-			        && !g_theWorld->IsSurroundedByWater(pos))
+			        && !g_theWorld->IsSurroundedByWater    (pos))
 			        ||  g_theWorld->IsNextToForeignerOnLand(pos, m_owner)
 			       )
 			  )
