@@ -1918,7 +1918,6 @@ static VideoState *stream_open(const char *filename, int startup_volume)
 fail:
 	stream_close(is);
 	return NULL;
-
 }
 
 static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
@@ -1938,6 +1937,9 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
 		remaining_time = REFRESH_RATE;
 		if (!is->paused || is->force_refresh)
 			video_refresh(is, &remaining_time);
+
+		if(is->eof == 1)
+			break;
 
 		SDL_PumpEvents();
 	}
@@ -2126,9 +2128,13 @@ AUI_ERRCODE aui_SDLMovie::Process()
 		SDL_Event event;
 
 		bool movieFinished = false;
-		while (!movieFinished) {
+		while (!movieFinished)
+		{
 			refresh_loop_wait_event(m_videoState, &event);
 			movieFinished = HandleMovieEvent(event);
+
+			if(m_videoState->eof == 1)
+				break;
 		}
 		Close();
 	}
@@ -2208,7 +2214,6 @@ bool aui_SDLMovie::HandleMovieEvent(SDL_Event &event)
 	return true;
 #endif
 }
-
 
 bool aui_SDLMovie::InsideMovieArea(int x, int y)
 {
