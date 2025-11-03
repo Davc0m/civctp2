@@ -506,6 +506,10 @@ Utility Goal::Compute_Matching_Value(Plan_List & matches, const bool update)
 
 	sint32 count = 0;
 
+	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\t[ No] ", count));
+	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
+		("\t\t  GoalPtr,\t    ArmyID,\t AgentPtr ( aX, aY),\t                      GoalName ( tX, tY) (stX,stY),\t    match,\traw match,\t square dist,\tturns to target,\t%       bonus,\t has wounded,\thas obsolete,\tis treaspassing,\ttime to goal (direct),\tin vision range,\tno barbs there,\tgarrison bonus,\tis transporter,\tagent goal,\ttie breaker,\t            top unit,\t       army name,\t       city here,\t     city target \n"));
+
 	for
 	(
 	    Plan_List::iterator match_iter  = matches.begin();
@@ -1905,7 +1909,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	MapPoint target_pos = Get_Target_Pos();
 
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%s (%3d,%3d) (%3d,%3d),\t%8d,\t%8d,\t%12f,\t%12f,\t%12d,\t%12f,\t%12f,\t%12f,\t%8d,\t%12f,\t%12f,\t%12f,\t%12d,\t%9x,\t%6d,\t%20s,\t%16s,\t%16s,\t%16s \n",
+	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%30s (%3d,%3d) (%3d,%3d),\t%9d,\t%9d,\t%12f,\t%15f,\t%12d,\t%12f,\t%12f,\t%15f,\t%21d,\t%15f,\t%14f,\t%14f,\t%14d,\t%10x,\t%11d,\t%20s,\t%16s,\t%16s,\t%16s \n",
 	this,                                          // This goal
 	agent_ptr->Get_Army().m_id,                    // The army
 	agent_ptr,                                     // The agent
@@ -1928,7 +1932,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	report_InVisionRange,                          // In vision range bonus
 	report_NoBarbsPresent,                         // If no Barbarian are present bonus
 	report_garrison_bonus,                         // If an agent is needed for garrison add a bonus so that it is also selected for garrison
-	is_transporter,                                // Whether the agent is a transporter
+	is_transporter,                                // Whether the agent is a transporter, not really used
 	agent_ptr->Get_Goal(),                         // The goal to that this agent is asigned to
 	tieBreaker,
 	g_theUnitDB->GetNameStr(agent_ptr->Get_Army()->Get(0).GetType()),
