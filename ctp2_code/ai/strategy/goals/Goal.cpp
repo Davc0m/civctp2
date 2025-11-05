@@ -1883,7 +1883,6 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 
 		// Take the number into account so that we prefer the closest one
 		tieBreaker /= cargoNum;
-		tieBreaker += 100; // That is still a bit hacky, it makes the AIs preffering transports, it is some sort of distance modifier
 	}
 	else
 	{
