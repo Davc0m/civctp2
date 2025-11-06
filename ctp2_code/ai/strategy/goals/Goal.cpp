@@ -3553,23 +3553,23 @@ bool Goal::FollowPathToTask( Agent_ptr first_army,
 		switch (m_sub_task)
 		{
 			case SUB_TASK_RALLY:
-				sprintf(myString, "Group to (%d,%d), %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, targetPos.x, targetPos.y);
+				sprintf(myString, "Group to (%d,%d), %s %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), targetPos.x, targetPos.y);
 				break;
 			case SUB_TASK_TRANSPORT_TO_BOARD:
-				sprintf(myString, "Boat to (%d,%d), %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, targetPos.x, targetPos.y);
+				sprintf(myString, "Boat to (%d,%d), %s %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), targetPos.x, targetPos.y);
 				break;
 			case SUB_TASK_TRANSPORT_TO_GOAL:
-				sprintf(myString, "Transp. to (%d,%d), %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, targetPos.x, targetPos.y);
+				sprintf(myString, "Transp. to (%d,%d), %s %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), targetPos.x, targetPos.y);
 				break;
 			case SUB_TASK_CARGO_TO_BOARD:
-				sprintf(myString, "Cargo. to (%d,%d), %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, targetPos.x, targetPos.y);
+				sprintf(myString, "Cargo. to (%d,%d), %s %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), targetPos.x, targetPos.y);
 				break;
 			case SUB_TASK_AIRLIFT:
-				sprintf(myString, "Airlift to (%d,%d), %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, targetPos.x, targetPos.y);
+				sprintf(myString, "Airlift to (%d,%d), %s %s (%d,%d)", dest_pos.x, dest_pos.y, goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), targetPos.x, targetPos.y);
 				break;
 			case SUB_TASK_GOAL:
 			default:
-				sprintf(myString, "%s (%d,%d)", goalString, dest_pos.x, dest_pos.y);
+				sprintf(myString, "%s %s (%d,%d)", goalString, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), dest_pos.x, dest_pos.y);
 				break;
 		}
 
