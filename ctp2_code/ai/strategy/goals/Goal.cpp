@@ -508,7 +508,7 @@ Utility Goal::Compute_Matching_Value(Plan_List & matches, const bool update)
 
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\t[ No] ", count));
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-		("\t\t  GoalPtr,\t    ArmyID,\t AgentPtr ( aX, aY),\t                      GoalName ( tX, tY) (stX,stY),\t    match,\traw match,\t square dist,\tturns to target,\t%       bonus,\t has wounded,\thas obsolete,\tis treaspassing,\ttime to goal (direct),\tin vision range,\tno barbs there,\tgarrison bonus,\tis transporter,\tagent goal,\ttie breaker,\t            top unit,\t       army name,\t       city here,\t     city target \n"));
+		("\t\t  GoalPtr,\t    ArmyID,\t AgentPtr ( aX, aY),\t                      GoalName ( tX, tY) (stX,stY),\t    match,\traw match,\t square dist,\tturns to target,\t       bonus,\t has wounded,\thas obsolete,\tis treaspassing,\ttime to goal (direct),\tin vision range,\tno barbs there,\tgarrison bonus,\tis transporter,\tagent goal,\ttie breaker,\t            top unit,\t       army name,\t       city here,\t     city target \n"));
 
 	for
 	(
@@ -4014,7 +4014,7 @@ bool Goal::GotoGoalTaskSolution(Agent_ptr the_army, MapPoint & goal_pos)
 				Utility val = Compute_Agent_Matching_Value(the_army);
 				uint8 magnitude = (uint8)(((5000000 - val) * 255.0) / 5000000);
 				MBCHAR * myString = new MBCHAR[256];
-				sprintf(myString, "Waiting GROUP to GO (%d,%d)\n", goal_pos.x, goal_pos.y);
+				sprintf(myString, "Waiting GROUP to GO %s (%d,%d)\n", (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), goal_pos.x, goal_pos.y);
 				g_graphicsOptions->AddTextToArmy(the_army->Get_Army(), myString, magnitude, m_goal_type);
 				delete[] myString;
 
@@ -4042,7 +4042,7 @@ bool Goal::GotoGoalTaskSolution(Agent_ptr the_army, MapPoint & goal_pos)
 			{
 				AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, m_goal_type, the_army->Get_Army().m_id,
 				           ("GOAL %x (%d):GotoGoalTaskSolution: No path found from army %s (x=%d,y=%d) to goal (x=%d,y=%d) (SUB_TASK_TRANSPORT):\n",
-				           this, m_goal_type, the_army->Get_Pos().x, the_army->Get_Army()->GetName(), the_army->Get_Pos().y, goal_pos.x, goal_pos.y));
+				           this, m_goal_type, the_army->Get_Army()->GetName(), the_army->Get_Pos().x, the_army->Get_Pos().y, goal_pos.x, goal_pos.y));
 				the_army->Log_Debug_Info(k_DBG_SCHEDULER, this);
 				uint8 magnitude = 220;
 				MBCHAR * myString = new MBCHAR[256];
@@ -4536,7 +4536,7 @@ bool Goal::RallyTroops()
 				MBCHAR * myString = new MBCHAR[256];
 				MapPoint goal_pos = Get_Target_Pos(agent_ptr->Get_Army());
 				MapPoint curr_pos = agent_ptr->Get_Pos();
-				sprintf(myString, "Split at (%d,%d) to GO (%d,%d)", curr_pos.x, curr_pos.y, goal_pos.x, goal_pos.y);
+				sprintf(myString, "Split at (%d,%d) to GO %s (%d,%d)", curr_pos.x, curr_pos.y, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), goal_pos.x, goal_pos.y);
 				g_graphicsOptions->AddTextToArmy(agent_ptr->Get_Army(), myString, magnitude);
 				delete[] myString;
 			}
@@ -4640,7 +4640,7 @@ bool Goal::RallyTroops()
 				MBCHAR * myString = new MBCHAR[256];
 				MapPoint goal_pos;
 				goal_pos = Get_Target_Pos(agent1_ptr->Get_Army());
-				sprintf(myString, "Waiting GROUP to GO (%d,%d)", goal_pos.x, goal_pos.y);
+				sprintf(myString, "Waiting GROUP to %s GO (%d,%d)", (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), goal_pos.x, goal_pos.y);
 				g_graphicsOptions->AddTextToArmy(agent1_ptr->Get_Army(), myString, magnitude);
 				delete[] myString;
 			}

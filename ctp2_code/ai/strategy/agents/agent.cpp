@@ -904,7 +904,7 @@ void Agent::WaitHere(const MapPoint & goal_pos)
 		MapPoint pos;
 		m_army->GetPos(pos);
 		MBCHAR * myString = new MBCHAR[255];
-		sprintf(myString, "Waiting GROUP @ (%d,%d) to GO (%d,%d)", pos.x, pos.y, goal_pos.x, goal_pos.y);
+		sprintf(myString, "Waiting GROUP @ (%d,%d) to %s GO (%d,%d)", pos.x, pos.y, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), goal_pos.x, goal_pos.y);
 		g_graphicsOptions->AddTextToArmy(m_army, myString, 220, Get_Goal_Type());
 		delete[] myString;
 	}
