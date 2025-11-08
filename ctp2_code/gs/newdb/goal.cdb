@@ -141,7 +141,8 @@ Goal {
 		StealthAttack,
 		Bombard,
 		Special,
-		Harass
+		Harass,
+		Garrison
 	}
 
 	// wonders of this type protect owner against this goal

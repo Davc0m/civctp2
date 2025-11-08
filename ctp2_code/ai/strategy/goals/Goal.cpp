@@ -1458,6 +1458,9 @@ void Goal::Compute_Needed_Troop_Flow()
 		case k_Goal_ForceMatch_Harass_Bit:
 			force_match = strategy.GetHarassPtr();
 			break;
+		case k_Goal_ForceMatch_Garrison_Bit:
+			force_match = strategy.GetGarrisonPtr();
+			break;
 		default:
 
 			Assert(false);

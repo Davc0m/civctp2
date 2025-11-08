@@ -528,6 +528,14 @@ STRATEGY_DEFAULT {
         ValueMatch    0.7
     }
 
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.4
+        RangedMatch   0.1
+        BombardMatch  0.3
+        ValueMatch    0.35
+    }
+
     Harass {
         AttackMatch   0.4
         DefenseMatch  0.3
@@ -734,6 +742,14 @@ STRATEGY_BARBARIAN {
     }
 
     Defensive {
+        AttackMatch   0.0
+        DefenseMatch  0.0
+        RangedMatch   0.0
+        BombardMatch  0.0
+        ValueMatch    0.0
+    }
+
+    Garrison {
         AttackMatch   0.0
         DefenseMatch  0.0
         RangedMatch   0.0
@@ -990,6 +1006,14 @@ STRATEGY_DEFEND {
         RangedMatch   0.6
         BombardMatch  0.4
         ValueMatch    1.1
+    }
+
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.3
+        RangedMatch   0.3
+        BombardMatch  0.2
+        ValueMatch    5.05
     }
 
     Harass {
@@ -1691,6 +1715,14 @@ STRATEGY_SCIENTIST_DEFAULT {
         ValueMatch    0.7
     }
 
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.4
+        RangedMatch   0.25
+        BombardMatch  0.3
+        ValueMatch    0.35
+    }
+
     Harass {
         AttackMatch   0.4
         DefenseMatch  0.3
@@ -2194,6 +2226,14 @@ STRATEGY_MILITARIST_DEFAULT {
         RangedMatch   0.5
         BombardMatch  0.6
         ValueMatch    0.7
+    }
+
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.35
+        RangedMatch   0.25
+        BombardMatch  0.3
+        ValueMatch    0.35
     }
 
     Harass {
@@ -2709,6 +2749,14 @@ STRATEGY_ECONOMIC_DEFAULT {
         ValueMatch    0.7
     }
 
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.4
+        RangedMatch   0.2
+        BombardMatch  0.3
+        ValueMatch    0.35
+    }
+
     Harass {
         AttackMatch   0.4
         DefenseMatch  0.3
@@ -3213,6 +3261,14 @@ STRATEGY_ECOTOPIAN_DEFAULT {
         ValueMatch    0.7
     }
 
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.4
+        RangedMatch   0.1
+        BombardMatch  0.3
+        ValueMatch    0.35
+    }
+
     Harass {
         AttackMatch   0.4
         DefenseMatch  0.3
@@ -3715,6 +3771,14 @@ STRATEGY_DIPLOMATIC_DEFAULT {
         RangedMatch   0.2
         BombardMatch  0.6
         ValueMatch    0.7
+    }
+
+    Garrison {
+        AttackMatch   0.1
+        DefenseMatch  0.4
+        RangedMatch   0.1
+        BombardMatch  0.3
+        ValueMatch    0.35
     }
 
     Harass {

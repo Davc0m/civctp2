@@ -1926,9 +1926,13 @@ void CtpAi::ComputeCityGarrisons(const PLAYER_INDEX playerId )
 	strategy.GetRangedGarrisonCount(ranged_garrison);
 	sint32 min_garrison = offensive_garrison + defensive_garrison + ranged_garrison;
 
-	const StrategyRecord::ForceMatch *  defense_force_match;
-	strategy.GetDefensive(defense_force_match);
-	double const threatFactor = defense_force_match->GetDefenseMatch();
+	const StrategyRecord::ForceMatch *  force_match;
+	if(strategy.HasGarrison())
+		strategy.GetGarrison(force_match);
+	else
+		strategy.GetDefensive(force_match);
+
+	double const threatFactor = force_match->GetDefenseMatch();
 
 	sint32 num_cities = player_ptr->m_all_cities->Num();
 	for (sint32 cityIndex = 0; cityIndex < num_cities; ++cityIndex)

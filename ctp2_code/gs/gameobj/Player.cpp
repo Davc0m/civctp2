@@ -1404,9 +1404,13 @@ Unit Player::CreateCity(
 
 	cityData->SetNeededGarrison(offensive_garrison + defensive_garrison + ranged_garrison);
 
-	const StrategyRecord::ForceMatch *  defense_force_match;
-	strategy.GetDefensive(defense_force_match);
-	double const threatFactor = defense_force_match->GetDefenseMatch();
+	const StrategyRecord::ForceMatch *  force_match;
+	if(strategy.HasGarrison())
+		strategy.GetGarrison(force_match);
+	else
+		strategy.GetDefensive(force_match);
+
+	double const threatFactor = force_match->GetDefenseMatch();
 
 	double threat = MapAnalysis::GetMapAnalysis().GetThreat(m_owner, pos) * threatFactor;
 	cityData->SetNeededGarrisonStrength(threat);

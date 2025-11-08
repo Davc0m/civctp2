@@ -374,6 +374,7 @@ Strategy {
 	Bit (struct ForceMatch) Bombard
 	Bit (struct ForceMatch) Special
 	Bit (struct ForceMatch) Harass
+	Bit (struct ForceMatch) Garrison
 
 	// set to disable first strike with nuclear weapons
 	Bits NuclearFirstStrike	{
