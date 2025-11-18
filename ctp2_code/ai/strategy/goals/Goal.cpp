@@ -1511,7 +1511,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	}
 
 #if defined(_DEBUG) || defined(USE_LOGGING)  // Add a debug report of goal computing (raw priority and all modifiers)
-	double report_garrison_bonus = bonus;
+	Utility report_garrison_bonus = bonus;
 #endif //_DEBUG
 
 	// This is expensive, because of pillage, get city target first.
@@ -1735,14 +1735,14 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		}
 	}
 #if defined(_DEBUG) || defined(USE_LOGGING)  // Add a debug report of goal computing (raw priority and all modifiers)
-	double report_wounded = bonus - report_garrison_bonus;
+	Utility report_wounded = bonus - report_garrison_bonus;
 #endif //_DEBUG
 
 	if(agent_ptr->Get_Army()->HasCargo() ? agent_ptr->Get_Army()->IsCargoObsolete() : agent_ptr->Get_Army()->IsObsolete())
 		bonus += g_theGoalDB->Get(m_goal_type)->GetObsoleteArmyBonus();
 
 #if defined(_DEBUG) || defined(USE_LOGGING)  // Add a debug report of goal computing (raw priority and all modifiers)
-	double report_obsolete = bonus - report_wounded;
+	Utility report_obsolete = bonus - report_wounded - report_garrison_bonus;
 #endif //_DEBUG
 
 	MapPoint point(-1, -1);
@@ -1806,9 +1806,9 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		}
 	}
 #if defined(_DEBUG) || defined(USE_LOGGING) // Add a debug report of goal computing (raw priority and all modifiers)
-	double report_Treaspassing   = bonus - report_obsolete;
-	double report_InVisionRange  = 0.0;
-	double report_NoBarbsPresent = 0.0;
+	Utility report_Treaspassing   = bonus - report_obsolete - report_wounded - report_garrison_bonus;
+	Utility report_InVisionRange  = 0.0;
+	Utility report_NoBarbsPresent = 0.0;
 #endif //_DEBUG
 
 	if(agent_ptr->Get_Army()->IsInVisionRangeAndCanEnter(dest_pos))
@@ -1817,7 +1817,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 		bonus += g_theGoalDB->Get(m_goal_type)->GetInVisionRangeBonus();
 
 #if defined(_DEBUG) || defined(USE_LOGGING) // Add a debug report of goal computing (raw priority and all modifiers)
-		report_InVisionRange  = bonus - report_Treaspassing;
+		report_InVisionRange  = bonus - report_Treaspassing - report_obsolete - report_wounded - report_garrison_bonus;
 #endif //_DEBUG
 
 		if (!Barbarians::InBarbarianPeriod()
@@ -1830,7 +1830,8 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 			bonus += g_theGoalDB->Get(m_goal_type)->GetCanAttackBonus();
 		}
 #if defined(_DEBUG) || defined(USE_LOGGING) // Add a debug report of goal computing (raw priority and all modifiers)
-		report_NoBarbsPresent = bonus - report_InVisionRange;
+		// That's now getting a bit freaky, but that is just debug code, of course you can still fix it properly,
+		report_NoBarbsPresent = bonus - report_InVisionRange - report_Treaspassing - report_obsolete - report_wounded - report_garrison_bonus;
 #endif //_DEBUG
 	}
 
@@ -1921,7 +1922,7 @@ Utility Goal::Compute_Agent_Matching_Value(const Agent_ptr agent_ptr) const
 	MapPoint target_pos = Get_Target_Pos();
 
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%30s (%3d,%3d) (%3d,%3d),\t%9d,\t%9d,\t%12f,\t%15f,\t%12d,\t%12f,\t%12f,\t%15f,\t%21d,\t%15f,\t%14f,\t%14f,\t%14d,\t%10x,\t%11d,\t%20s,\t%16s,\t%16s,\t%16s \n",
+	("\t\t%9x,\t %9x,\t%9x (%3d,%3d),\t%30s (%3d,%3d) (%3d,%3d),\t%9d,\t%9d,\t%12f,\t%15f,\t%12d,\t%12d,\t%12d,\t%15d,\t%21d,\t%15d,\t%14d,\t%14d,\t%14d,\t%10x,\t%11d,\t%20s,\t%16s,\t%16s,\t%16s \n",
 	this,                                          // This goal
 	agent_ptr->Get_Army().m_id,                    // The army
 	agent_ptr,                                     // The agent
@@ -3341,10 +3342,11 @@ void Goal::Log_Debug_Info(const int &log) const
 		           m_goal_type,
 		           -1,
 		           (
-		                "\tGoal %9x,\t%s,\tRaw priority: %8d,\t(%3d,%3d) (%s)\n",
+		                "\tGoal %9x,\t%s,\tRaw priority: %8d, Combined priority%8d,\t(%3d,%3d) (%s)\n",
 		                this,
 		                name,
 		                m_raw_priority,
+		                m_combinedUtility,
 		                pos.x,
 		                pos.y,
 		                (g_theWorld->HasCity(pos) ? g_theWorld->GetCity(pos).GetName() : "field")
