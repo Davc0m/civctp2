@@ -160,6 +160,8 @@ public:
 
 	void Add_New_Goal(const Goal_ptr & new_goal);
 
+	void Scheduler::Associate_Goals_With_Sub_Goals();
+
 	void Add_New_Agent(const Agent_ptr & new_agent);
 	Agent_List::iterator Add_Agent(const Agent_ptr & agent);
 

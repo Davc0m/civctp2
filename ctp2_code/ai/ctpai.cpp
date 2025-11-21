@@ -1293,7 +1293,7 @@ void CtpAi::BeginTurn(const PLAYER_INDEX player)
 	DPRINTF(k_DBG_AI, ("//                                                   Player %d\n", player));
 
 	AddGoalsForCitiesAndArmies(player);
-
+	Scheduler::GetScheduler(player).Associate_Goals_With_Sub_Goals();
 	DPRINTF(k_DBG_AI, ("//  elapsed time = %d ms\n", (GetTickCount() - t1)));
 
 	if (player == 0 && player_ptr->IsRobot())

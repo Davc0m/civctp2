@@ -153,6 +153,7 @@ Goal::Goal()
     m_current_attacking_strength    (),
     m_matches                       (),
     m_agents                        (),
+    m_sub_goal                      (nullptr),
     m_raw_priority                  (BAD_UTILITY),
     m_combinedUtility               (0),
     m_target_pos                    (),
@@ -171,6 +172,7 @@ Goal::Goal(const Goal &goal)
     m_current_attacking_strength    (0),                         // Nothing since the agent list is not copied
     m_matches                       (),                          // Contains refernces that are invalid after copy
     m_agents                        (),                          // Agents are just pointers, which are changed on copy
+    m_sub_goal                      (goal.m_sub_goal),
     m_raw_priority                  (goal.m_raw_priority),
     m_combinedUtility               (goal.m_combinedUtility),
     m_target_pos                    (goal.m_target_pos),
@@ -203,6 +205,7 @@ Goal& Goal::operator= (const Goal &goal)
 	m_target_city                = goal.m_target_city;
 	m_target_army                = goal.m_target_army;
 	m_sub_task                   = goal.m_sub_task;
+	m_sub_goal                   = goal.m_sub_goal;
 
 	Assert(false); // Hopefully not used
 	return *this;
@@ -219,7 +222,7 @@ bool Goal::operator == (const Goal & rval) const
 
 bool Goal::Is_Satisfied() const
 {
-	if(m_agents.size() == 0)
+	if(Get_Agent_Count_All() == 0)
 		return false;
 
 	// Limitation of army size: Cannot form a group with more
@@ -274,11 +277,18 @@ void Goal::Commit_Agent(const Agent_ptr & agent)
 	){
 		m_current_attacking_strength.Add_Agent_Strength(agent);
 
-		m_agents.push_back(agent);
+		if(agent->Get_Goal() == nullptr)
+		{
+			m_agents.push_back(agent);
 
-		agent->Set_Goal(this);
+			agent->Set_Goal(this);
+		}
+		else
+		{
+			Assert(agent->Get_Goal() == m_sub_goal);
+		}
 
-		Assert(m_current_attacking_strength.Get_Agent_Count() >= static_cast<sint8>(m_agents.size()));
+		Assert(m_current_attacking_strength.Get_Agent_Count() >= static_cast<sint8>(Get_Agent_Count()));
 	}
 }
 
@@ -328,7 +338,7 @@ void Goal::Rollback_Agent(Agent_List::iterator & agent_iter)
 
 	agent_iter = m_agents.erase(agent_iter);
 
-	Assert(m_current_attacking_strength.Get_Agent_Count() >= static_cast<sint8>(m_agents.size()));
+	Assert(m_current_attacking_strength.Get_Agent_Count() >= static_cast<sint8>(Get_Agent_Count()));
 
 	agent_ptr->Set_Goal(NULL);
 }
@@ -543,7 +553,7 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 	if(!update)
 	{
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-					("\tCompute Matching Value for goal: %x, %s, raw_match: %i\n", this, g_theGoalDB->Get(m_goal_type)->GetNameText(), m_raw_priority));
+		           ("\tCompute Matching Value for goal: %x, %s, raw_match: %i, Commited agents: %d for sub: %d\n", this, g_theGoalDB->Get(m_goal_type)->GetNameText(), m_raw_priority, Get_Agent_Count(), GetSubGoalCount()));
 	}
 
 	const GoalRecord * goal_record  = g_theGoalDB->Get(m_goal_type);
@@ -560,7 +570,10 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 	          ++match_iter
 	)
 	{
-		if(!match_iter->All_Unused_Or_Used_By_This(this))
+		if(
+		      !match_iter->All_Unused_Or_Used_By_This(this)
+		   && !match_iter->All_Unused_Or_Used_By_This(m_sub_goal)
+		  )
 			continue;
 
 		if(match_iter->Get_Needs_Cargo())
@@ -577,9 +590,10 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 
 				combinedUtility += matchUtility;
 				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
-				            ("\t\t[%3d] match = %d %s Army: %9x Agent: %9x (%3d, %3d)\t%20s Name: \t%16s (units %2d, cargo %2d)\n",
+				            ("\t\t[%3d] match = %d combined = %d %s Army: %9x Agent: %9x (%3d, %3d)\t%20s Name: \t%16s (units %2d, cargo %2d) \t (is_used=%d) \t (by_this=%d) \t (by_sub=%d)\n",
 				             count,
 				             matchUtility,
+				             combinedUtility / (count + 1),
 				             g_theGoalDB->Get(m_goal_type)->GetNameText(),
 				             match_iter->Get_Agent()->Get_Army(),
 				             match_iter->Get_Agent(),
@@ -588,7 +602,10 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 				             g_theUnitDB->GetNameStr(match_iter->Get_Agent()->Get_Army()->Get(0).GetType()),
 				             match_iter->Get_Agent()->Get_Army()->GetName(),
 				             match_iter->Get_Agent()->Get_Army()->Num(),
-				             match_iter->Get_Agent()->Get_Army()->GetCargoNum()));
+				             match_iter->Get_Agent()->Get_Army()->GetCargoNum(),
+				             (match_iter->Get_Agent()->Get_Goal() ? 1 : 0),
+				             ((match_iter->Get_Agent()->Get_Goal() == this) ? 1 : 0),
+				             ((match_iter->Get_Agent()->Get_Goal() == m_sub_goal && m_sub_goal != nullptr) ? 1 : 0)));
 				++count;
 			}
 			else
@@ -644,17 +661,16 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update, c
 	}
 
 	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,("\tMatch value combined utility: %i, raw priority: %i, execute incrementally: %i\n", combinedUtility, m_raw_priority, goal_record->GetExecuteIncrementally()));
+	AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\n"));
+
 	if(update)
 	{
 		m_combinedUtility = combinedUtility;
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\n"));
 
 		return Get_Matching_Value();
 	}
 	else
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1, ("\t\n"));
-
 		return (  !g_theGoalDB->Get(m_goal_type)->GetIsGlobalGoal()
 		        || combinedUtility == Goal::BAD_UTILITY) ?
 		           combinedUtility : m_raw_priority;
@@ -788,7 +804,7 @@ void Goal::Commit_Agents()
 		}
 	}
 
-	if(Get_Agent_Count() > 0)
+	if(Get_Agent_Count_All() > 0)
 	{
 		Log_Debug_Info(
 		               (Is_Satisfied() || Is_Execute_Incrementally()) ?
@@ -853,6 +869,7 @@ void Goal::Remove_Match(const Agent_ptr & agent)
 		{
 			if(agent->Has_Goal(this))
 			{
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Remove %s (%9x) for agent %9x (%9x)\n", g_theGoalDB->GetNameStr(agent->Get_Goal_Type()), agent->Get_Goal(), agent, agent->Get_Army().m_id));
 				Rollback_Agent(agent);
 			}
 
@@ -996,23 +1013,12 @@ void Goal::Recompute_Current_Attacking_Strength()
 	{
 		m_current_attacking_strength += (*agent_iter)->Get_Squad_Strength();
 	}
-}
 
-Squad_Strength Goal::Compute_Current_Strength()
-{
-	Squad_Strength strength;
-
-	for
-	(
-	    Agent_List::iterator agent_iter  = m_agents.begin();
-	                         agent_iter != m_agents.end();
-	                       ++agent_iter
-	)
+	if(m_sub_goal != nullptr)
 	{
-		strength += (*agent_iter)->Get_Squad_Strength();
+		m_sub_goal->Recompute_Current_Attacking_Strength();
+		m_current_attacking_strength += m_sub_goal->GetCurrentAttackStrenght();
 	}
-
-	return strength;
 }
 
 void Goal::Sort_Matches(Plan_List & matches)
@@ -1326,7 +1332,6 @@ void Goal::Compute_Needed_Troop_Flow()
 	{
 		if(goal_record->GetTargetOwnerSelf())
 			m_current_needed_strength.Set_Defense(threat);
-
 		else
 			m_current_needed_strength.Set_Attack(threat);
 
@@ -1344,10 +1349,8 @@ void Goal::Compute_Needed_Troop_Flow()
 		// (I Prefer that method than the GARRISON troops, that are not able to leave the city)
 		// cities will be better defended if there are enough units, otherwise units will be
 		// affected to relevant goals
-		if(g_theGoalDB->Get(m_goal_type)->GetTargetTypeCity()
-		&& g_theGoalDB->Get(m_goal_type)->GetTargetOwnerSelf()
-		&& goal_record->GetTreaspassingArmyBonus() > 0
-		){
+		if(goal_record->GetTreaspassingArmyBonus() > 0)
+		{
 			m_current_needed_strength.Set_Agent_Count(2);
 		}
 		else
@@ -1362,16 +1365,22 @@ void Goal::Compute_Needed_Troop_Flow()
 			strategy.GetDefensiveGarrisonCount(defensive_garrison);
 			strategy.GetRangedGarrisonCount(ranged_garrison);
 
-			// why only defensive units ?
-			// added ranged units - Calvitix
+			// Why only defensive units?
+			// Added ranged units - Calvitix
 			m_current_needed_strength.Set_Defense(threat * 2 / 3);
 			m_current_needed_strength.Set_Ranged(threat / 3);
 			m_current_needed_strength.Set_Value(value);
+			// Must be consitent with the garrison calculation
+			// Original code
+			//m_current_needed_strength.Set_Defense(threat);
 
 			//not used for the moment (only attack or defense strength is considerated
 			//(see army_strength > operator) - Calvitix
 			m_current_needed_strength.Set_Defenders(static_cast<sint8>(defensive_garrison + offensive_garrison));
 			m_current_needed_strength.Set_Ranged_Units(static_cast<sint8>(ranged_garrison));
+
+			if(goal_record->GetIsGarrison() && m_target_city.IsValid())
+				m_current_needed_strength.Set_Agent_Count(m_target_city.CD()->GetNeededGarrison());
 		}
 	}
 	else if
@@ -3441,12 +3450,26 @@ void Goal::Log_Debug_Info(const int &log) const
 		return;
 	}
 
-	if (m_agents.size() > 0)
-		AI_DPRINTF(log,  m_playerId, m_goal_type, -1, ("\t\t\tCommitted Agents (%d):\n", m_agents.size()));
+	if (GetSubGoalCount() > 0)
+		AI_DPRINTF(log,  m_playerId, m_goal_type, -1, ("\t\t\tCommitted Agents by sub: %d\n", GetSubGoalCount()));
+
+	if(m_sub_goal != nullptr)
+	{
+		for( agent_iter  = m_sub_goal->m_agents.begin();
+		     agent_iter != m_sub_goal->m_agents.end();
+		     agent_iter++
+		){
+			Agent_ptr agent_ptr = (Agent_ptr) *agent_iter;
+			agent_ptr->Log_Debug_Info(log, this);
+		}
+	}
+
+	if (m_agents.size())
+		AI_DPRINTF(log,  m_playerId, m_goal_type, -1, ("\t\t\tCommitted Agents: %d\n", m_agents.size()));
 
 	for( agent_iter  = m_agents.begin();
-		 agent_iter != m_agents.end();
-		 agent_iter++
+	     agent_iter != m_agents.end();
+	     agent_iter++
 	){
 		Agent_ptr agent_ptr = (Agent_ptr) *agent_iter;
 		agent_ptr->Log_Debug_Info(log, this);

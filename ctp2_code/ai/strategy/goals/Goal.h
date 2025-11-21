@@ -102,6 +102,7 @@ public:
     bool Is_Goal_Undercommitted() const { return (!Is_Satisfied() && m_agents.size() > 0); };
 
     size_t Get_Agent_Count() const { return m_agents.size(); };
+    size_t Get_Agent_Count_All() const { return m_agents.size() + GetSubGoalCount(); };
 
     bool Is_Single_Agent() const { return m_agents.size() == 1; };
 
@@ -143,7 +144,7 @@ public:
 
     const Squad_Strength Get_Strength_Needed() const;
 
-    Utility Compute_Matching_With_Generic_Matches(Goal_ptr genric_goal, const bool update = true) { return Compute_Matching_Value(genric_goal->m_matches, update); };
+    Utility Compute_Matching_With_Generic_Matches(Goal_ptr generic_goal, const bool update = true) { return Compute_Matching_Value(generic_goal->m_matches, update); };
     Utility Compute_Matching_Value(Plan_List & matches, const bool update = true);
     Utility Compute_Matching_Value(const bool update = true) { return Compute_Matching_Value(m_matches, update); };
     Utility Recompute_Matching_Value(Plan_List & matches, const bool update = true, const bool show_strength = true);
@@ -170,9 +171,9 @@ public:
     void Set_Needs_Transporter(const bool needs_transporter);
     void Set_Needs_Transporter(Agent_ptr agent_ptr);
     sint16 Get_Transporters_Num() const { return m_current_attacking_strength.Get_Transport(); }
+    Squad_Strength GetCurrentAttackStrenght() const { return m_current_attacking_strength; }
 
     void Recompute_Current_Attacking_Strength();
-    Squad_Strength Compute_Current_Strength();
 
     void Sort_Matches_If_Necessary();
     void Set_Target_Pos(const MapPoint & pos);
@@ -215,14 +216,13 @@ public:
     bool IsCurrentlyUnavailable() const;
     bool IsTargetImmune() const;
     bool IsInvalidByDiplomacy() const;
+    void SetSubGoal(Goal* subGoal) { m_sub_goal = subGoal; }
+    Goal* GetSubGoal() const { return m_sub_goal; }
+    size_t GetSubGoalCount() const { return m_sub_goal != nullptr ? m_sub_goal->m_agents.size() : 0; }
 
 private:
 
     void Rollback_Agent(Agent_List::iterator & agent_iter);
-
-    bool FindPathToTask(Agent_ptr the_army,
-                        const MapPoint & goal_pos,
-                        Path & found_path);
 
     bool FollowPathToTask(Agent_ptr first_army,
                           Agent_ptr second_army,
@@ -268,6 +268,7 @@ private:
     Squad_Strength                    m_current_attacking_strength;
     Plan_List                         m_matches;
     Agent_List                        m_agents;
+    Goal*                             m_sub_goal;
     Utility                           m_raw_priority;
     Utility                           m_combinedUtility;
     MapPoint                          m_target_pos;

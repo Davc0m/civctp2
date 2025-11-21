@@ -24,7 +24,7 @@
 #
 #----------------------------------------------------------------------------
 
-# 53
+# 54
 
 // Any changes made to the order, additions or subractions to this
 // file should be reflected in the strategies.txt file!!
@@ -32,6 +32,13 @@
 ## 0 ##########################################################
 
 GOAL_DEFEND {
+  // This brings units to the target city for defence.
+  // This goal used units that have not been used for siege.
+  // It also consideres the units used in GOAL_GARRISON
+  // targeting the same place.
+  // So that this works GOAL_DEFEND needs lower prijority
+  // than GOAL_SEIGE and GOAL_GARRISON. And GOAL_GARRISON
+  // needs higher priority than GOAL_SEIGE.
   ExecuteIncrementally
   UnGroupFirst
 
@@ -64,9 +71,51 @@ GOAL_DEFEND {
   ThreatenBonus 0
 
   ForceMatch:Defensive
+
+  // Also consider the units that are used for following goal at the same target place
+  SubGoal GOAL_GARRISON
 }
 
 ## 1 ##########################################################
+
+GOAL_GARRISON {
+  // Check for some information at GOAL_DEFEND.
+  IsGarrison
+  ExecuteIncrementally
+  UnGroupFirst
+
+  SquadClass:CanAttack
+  SquadClass:CanDefend
+
+  TargetType:City
+  TargetOwner:Self
+
+  Execute   ORDER_MOVE
+
+  ThreatBonus            2000
+  EnemyValueBonus           0
+  AlliedValueBonus       1000
+  PowerBonus             -100
+  DistanceToHomeBonus     100
+  DistanceToEnemyBonus    -10
+  InHomeTerritoryBonus      0
+  NoOwnerTerritoryBonus     0
+  InEnemyTerritoryBonus     0
+  WoundedArmyBonus      10000
+  NotVisibleBonus           0
+  ChokePointBonus         250
+  UnexploredBonus     -999999
+  ObsoleteArmyBonus      -500
+  TreaspassingArmyBonus     0
+  GarrisonBonus         10000
+
+  ThreatenType:None
+  ThreatenBonus 0
+
+  ForceMatch:Garrison
+}
+
+## 2 ##########################################################
 
 GOAL_SEIGE {
   RallyFirst
@@ -117,7 +166,7 @@ GOAL_SEIGE {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 2 ##########################################################
+## 3 ##########################################################
 
 GOAL_ATTACK {
   RallyFirst
@@ -155,7 +204,7 @@ GOAL_ATTACK {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 3 ##########################################################
+## 4 ##########################################################
 
 GOAL_HARASS {
   RallyFirst
@@ -192,7 +241,7 @@ GOAL_HARASS {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 4 ##########################################################
+## 5 ##########################################################
 
 GOAL_SETTLE_LAND {
   NeedsEscort
@@ -227,7 +276,7 @@ GOAL_SETTLE_LAND {
   ForceMatch:Special
 }
 
-## 5 ##########################################################
+## 6 ##########################################################
 
 GOAL_SETTLE_SEA {
   NeedsEscort
@@ -262,7 +311,7 @@ GOAL_SETTLE_SEA {
   ForceMatch:Special
 }
 
-## 6 ##########################################################
+## 7 ##########################################################
 
 GOAL_SETTLE_IN_CITY {
   NeedsEscort
@@ -298,7 +347,7 @@ GOAL_SETTLE_IN_CITY {
   ForceMatch:Special
 }
 
-## 7 ##########################################################
+## 8 ##########################################################
 
 GOAL_EXPLORE {
   UnGroupFirst
@@ -338,7 +387,7 @@ GOAL_EXPLORE {
   ForceMatch:Special
 }
 
-## 8 ##########################################################
+## 9 ##########################################################
 
 GOAL_STEALTH_EXPLORE {
   UnGroupFirst
@@ -380,7 +429,7 @@ GOAL_STEALTH_EXPLORE {
   ForceMatch:Special
 }
 
-## 9 ##########################################################
+## 10 ##########################################################
 
 GOAL_ENSLAVE_SETTLER {
   UnGroupFirst
@@ -418,7 +467,7 @@ GOAL_ENSLAVE_SETTLER {
   ForceMatch:Special
 }
 
-## 10 ##########################################################
+## 11 ##########################################################
 
 GOAL_SLAVE_RAID {
   UnGroupFirst
@@ -457,7 +506,7 @@ GOAL_SLAVE_RAID {
   ForceMatch:Special
 }
 
-## 11 ##########################################################
+## 12 ##########################################################
 
 GOAL_CHOKEPOINT {
   RallyFirst
@@ -493,7 +542,7 @@ GOAL_CHOKEPOINT {
   ForceMatch:Defensive
 }
 
-## 12 ##########################################################
+## 13 ##########################################################
 
 GOAL_PATROL {
   NoTransport
@@ -530,7 +579,7 @@ GOAL_PATROL {
   ForceMatch:Defensive
 }
 
-## 13 ##########################################################
+## 14 ##########################################################
 
 GOAL_CONVERT_CITY {
   UnGroupFirst
@@ -568,7 +617,7 @@ GOAL_CONVERT_CITY {
   ForceMatch:Special
 }
 
-## 14 ##########################################################
+## 15 ##########################################################
 
 GOAL_BIOTERROR_CITY {
   UnGroupFirst
@@ -606,7 +655,7 @@ GOAL_BIOTERROR_CITY {
   ForceMatch:Special
 }
 
-## 15 ##########################################################
+## 16 ##########################################################
 
 GOAL_NANOATTACK_CITY {
   UnGroupFirst
@@ -644,7 +693,7 @@ GOAL_NANOATTACK_CITY {
   ForceMatch:Special
 }
 
-## 16 ##########################################################
+## 17 ##########################################################
 
 GOAL_HARASS_CITY {
   RallyFirst
@@ -682,7 +731,7 @@ GOAL_HARASS_CITY {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 17 ##########################################################
+## 18 ##########################################################
 
 GOAL_BOMBARD {
   SquadClass:CanDefend
@@ -720,7 +769,7 @@ GOAL_BOMBARD {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 18 ##########################################################
+## 19 ##########################################################
 
 GOAL_EXPEL {
   SquadClass:CanAttack
@@ -754,7 +803,7 @@ GOAL_EXPEL {
   ForceMatch:Special
 }
 
-## 19 ##########################################################
+## 20 ##########################################################
 
 GOAL_PILLAGE {
   UnGroupFirst
@@ -791,7 +840,7 @@ GOAL_PILLAGE {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 20 ##########################################################
+## 21 ##########################################################
 
 GOAL_PIRATE {
   UnGroupFirst
@@ -827,7 +876,7 @@ GOAL_PIRATE {
   ForceMatch:Special
 }
 
-## 21 ##########################################################
+## 22 ##########################################################
 
 GOAL_COUNTER_STEALTH {
   NoTransport
@@ -861,7 +910,7 @@ GOAL_COUNTER_STEALTH {
   ForceMatch:Special
 }
 
-## 22 ##########################################################
+## 23 ##########################################################
 
 GOAL_GOODY_HUT {
   SquadClass:CanExplore
@@ -899,7 +948,7 @@ GOAL_GOODY_HUT {
   ForceMatch:Special
 }
 
-## 23 ##########################################################
+## 24 ##########################################################
 
 GOAL_PLANT_NUKE {
   AvoidWatchfulCity
@@ -936,7 +985,7 @@ GOAL_PLANT_NUKE {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 24 ##########################################################
+## 25 ##########################################################
 
 GOAL_CREATE_PARK {
   UnGroupFirst
@@ -972,7 +1021,7 @@ GOAL_CREATE_PARK {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 25 ##########################################################
+## 26 ##########################################################
 
 GOAL_SOOTHSAY {
   UnGroupFirst
@@ -1008,7 +1057,7 @@ GOAL_SOOTHSAY {
   ForceMatch:Special
 }
 
-## 26 ##########################################################
+## 27 ##########################################################
 
 GOAL_ESTABLISH_EMBASSY {
 
@@ -1052,7 +1101,7 @@ GOAL_ESTABLISH_EMBASSY {
   ForceMatch:Special
 }
 
-## 27 ##########################################################
+## 28 ##########################################################
 
 GOAL_FRANCHISING {
   UnGroupFirst
@@ -1088,7 +1137,7 @@ GOAL_FRANCHISING {
   ForceMatch:Special
 }
 
-## 28 ##########################################################
+## 29 ##########################################################
 
 GOAL_STEAL_TECHNOLOGY {
   UnGroupFirst
@@ -1126,7 +1175,7 @@ GOAL_STEAL_TECHNOLOGY {
   ForceMatch:Special
 }
 
-## 29 ##########################################################
+## 30 ##########################################################
 
 GOAL_INVESTIGATE_CITY {
   UnGroupFirst
@@ -1164,7 +1213,7 @@ GOAL_INVESTIGATE_CITY {
   ForceMatch:Special
 }
 
-## 30 ##########################################################
+## 31 ##########################################################
 
 GOAL_INCITE_REVOLUTION {
   UnGroupFirst
@@ -1201,7 +1250,7 @@ GOAL_INCITE_REVOLUTION {
   ForceMatch:Special
 }
 
-## 31 ##########################################################
+## 32 ##########################################################
 
 GOAL_INJOIN {
   UnGroupFirst
@@ -1236,7 +1285,7 @@ GOAL_INJOIN {
   ForceMatch:Special
 }
 
-## 32 ##########################################################
+## 33 ##########################################################
 
 GOAL_ASSASSINATE {
   UnGroupFirst
@@ -1273,7 +1322,7 @@ GOAL_ASSASSINATE {
   ForceMatch:Special
 }
 
-## 33 ##########################################################
+## 34 ##########################################################
 
 GOAL_UNDERGROUND_RAILWAY {
   UnGroupFirst
@@ -1309,7 +1358,7 @@ GOAL_UNDERGROUND_RAILWAY {
   ForceMatch:Special
 }
 
-## 34 ##########################################################
+## 35 ##########################################################
 
 GOAL_NUKE_CITY {
   SquadClass:Special
@@ -1344,7 +1393,7 @@ GOAL_NUKE_CITY {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 35 ##########################################################
+## 36 ##########################################################
 
 GOAL_WANDER {
   SquadClass:CanExplore
@@ -1381,7 +1430,7 @@ GOAL_WANDER {
   ForceMatch:Special
 }
 
-## 36 ##########################################################
+## 37 ##########################################################
 
 GOAL_SALLY {
   IsSally
@@ -1416,7 +1465,7 @@ GOAL_SALLY {
   ForceMatch:Offensive
 }
 
-## 37 ##########################################################
+## 38 ##########################################################
 
 GOAL_REFORM {
   SquadClass:CanAttack
@@ -1448,7 +1497,7 @@ GOAL_REFORM {
   ForceMatch:Special
 }
 
-## 38 ##########################################################
+## 39 ##########################################################
 
 GOAL_SUE_FRANCHISE {
   SquadClass:Special
@@ -1481,7 +1530,7 @@ GOAL_SUE_FRANCHISE {
   ForceMatch:Special
 }
 
-## 39 ##########################################################
+## 40 ##########################################################
 
 // Cause military units to pullback towards our city
 //
@@ -1524,7 +1573,7 @@ GOAL_RETREAT {
   ForceMatch:Special 
 }
 
-## 40 ##########################################################
+## 41 ##########################################################
 
 // Cause special units to pullback if no other goal
 //
@@ -1564,7 +1613,7 @@ GOAL_RETREAT_SPECIAL {
   ForceMatch:Special 
 }
 
-## 41 ##########################################################
+## 42 ##########################################################
 
 // Destroy other endgame terrain improvements
 GOAL_DESTROY_ENDGAME
@@ -1603,7 +1652,7 @@ GOAL_DESTROY_ENDGAME
   ForceMatch:Offensive
 }
 
-## 42 ##########################################################
+## 43 ##########################################################
 
 // Defend our endgame terrain improvements
 GOAL_PROTECT_ENDGAME
@@ -1641,7 +1690,7 @@ GOAL_PROTECT_ENDGAME
   ForceMatch:Defensive
 }
 
-## 43 ##########################################################
+## 44 ##########################################################
 
 GOAL_ADVERTISING {
   UnGroupFirst
@@ -1679,7 +1728,7 @@ GOAL_ADVERTISING {
   ForceMatch:Special
 }
 
-## 44 ##########################################################
+## 45 ##########################################################
 
 GOAL_INCITE_UPRISING {
   UnGroupFirst
@@ -1716,7 +1765,7 @@ GOAL_INCITE_UPRISING {
   ForceMatch:Special
 }
 
-## 45 ##########################################################
+## 46 ##########################################################
 
 GOAL_POISON_CITY {
   UnGroupFirst
@@ -1754,7 +1803,7 @@ GOAL_POISON_CITY {
   ForceMatch:Special
 }
 
-## 46 ##########################################################
+## 47 ##########################################################
 
 GOAL_THROW_PARTY {
 
@@ -1800,7 +1849,7 @@ GOAL_THROW_PARTY {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 47 ##########################################################
+## 48 ##########################################################
 
 GOAL_SUE {
   UnGroupFirst
@@ -1837,7 +1886,7 @@ GOAL_SUE {
   ForceMatch:Special
 }
 
-## 48 ##########################################################
+## 49 ##########################################################
 
 GOAL_INDULGENCE {
   UnGroupFirst
@@ -1875,7 +1924,7 @@ GOAL_INDULGENCE {
   ForceMatch:Special
 }
 
-## 49 ##########################################################
+## 50 ##########################################################
 
 GOAL_FAITH_HEALING {
   UnGroupFirst
@@ -1912,7 +1961,7 @@ GOAL_FAITH_HEALING {
   ForceMatch:Special
 }
 
-## 50 ##########################################################
+## 51 ##########################################################
 
 GOAL_REFUEL {
   SquadClass:Special
@@ -1944,7 +1993,7 @@ GOAL_REFUEL {
   ForceMatch:Special
 }
 
-## 51 ##########################################################
+## 52 ##########################################################
 
 GOAL_PARADROP {
 
@@ -1982,7 +2031,7 @@ GOAL_PARADROP {
   TargetProtectionWonder WONDER_THE_FORBIDDEN_CITY
 }
 
-## 52 ##########################################################
+## 53 ##########################################################
 
 GOAL_RANGED_ATTACK {
   RallyFirst

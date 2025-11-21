@@ -955,6 +955,38 @@ void Scheduler::Add_New_Goal(const Goal_ptr & new_goal)
 		push_back(Sorted_Goal_ptr(Goal::BAD_UTILITY, new_goal));
 }
 
+void Scheduler::Associate_Goals_With_Sub_Goals()
+{
+	for(sint32 goal_type = 0; goal_type < g_theGoalDB->NumRecords(); goal_type++)
+	{
+		sint32 sub_goal = -1;
+		if(!g_theGoalDB->Get(goal_type)->GetSubGoalIndex(sub_goal))
+			continue;
+
+		if(m_goals_of_type[goal_type].size() != m_goals_of_type[sub_goal].size())
+			continue;
+
+		Sorted_Goal_Iter tmp_goal_iter =
+			m_goals_of_type[goal_type].begin();
+
+		Sorted_Goal_Iter sub_goal_iter =
+			m_goals_of_type[sub_goal].begin();
+
+		while(tmp_goal_iter != m_goals_of_type[goal_type].end())
+		{
+			Goal_ptr the_goal = tmp_goal_iter->second;
+			Goal_ptr sub_goal = sub_goal_iter->second;
+
+			if(the_goal->Get_Target_Pos() != sub_goal->Get_Target_Pos())
+				continue;
+
+			the_goal->SetSubGoal(sub_goal);
+			tmp_goal_iter++;
+			sub_goal_iter++;
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //    Add_New_Agent
