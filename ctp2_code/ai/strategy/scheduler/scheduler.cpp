@@ -2124,6 +2124,7 @@ void Scheduler::Assign_Garrison()
 	{
 		Agent_ptr agent = (*agent_iter);
 
+		bool wasNeededForGarrison = agent->IsNeededForGarrison();
 		agent->SetIsNeededForGarrison(false);
 
 		Army army = agent->Get_Army();
@@ -2175,13 +2176,29 @@ void Scheduler::Assign_Garrison()
 			                      true
 			                     );
 
-			defense_strength += static_cast<float>(city.GetDefendersBonus() * static_cast<double>(defense_count));
+			defense_strength += static_cast<float>(city.GetDefendersBonus() * static_cast<double>(defense_count)); // @ToDo: here must also be something checked
+
+			// If this agent was previously used in city garrison,
+			// we increase the value slightly so that we prefer this one
+			// over another one that just made it to the city
+			// and is otherwise just equal.
+			if(wasNeededForGarrison) defense_strength += 0.1f;
 
 			sint32 idx = -1;
 			if(g_player[m_playerId]->GetCityIndex(city, idx))
 			{
 				garrisonAgents[idx].push_back(Sorted_Agent_ptr(defense_strength, agent));
 			}
+		}
+	}
+
+	bool hasGarrison = false;
+	for(sint32 i = 0; i < g_theGoalDB->NumRecords(); ++i)
+	{
+		if(g_theGoalDB->Get(i)->GetIsGarrison())
+		{
+			hasGarrison = true;
+			break;
 		}
 	}
 
@@ -2195,10 +2212,12 @@ void Scheduler::Assign_Garrison()
 		garrisonAgents[i].sort(std::greater<>());
 
 		sint8  needed_garrison           = city.CD()->GetNeededGarrison();
-		double needed_garrison_strength  = city.CD()->GetNeededGarrisonStrength();
+		double needed_garrison_strength  = city.CD()->GetNeededGarrisonStrength() *2 / 3; // That should be actually depend on force match, but to that later
+//		double needed_garrison_ranged    = city.CD()->GetNeededGarrisonStrength() / 3; // That doesn't really, fit since we don't have ranged, yet
 
 		sint8  current_garrison          = 0;
 		double current_garrison_strength = 0.0;
+//		double current_garrison_ranged   = 0.0;
 
 		for
 		(
@@ -2218,7 +2237,7 @@ void Scheduler::Assign_Garrison()
 
 				agent_iter->second->SetIsNeededForGarrison(true);
 
-				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Agent %16x (%9x) Defense: %9.1f GarrisonStrength: %9.1f / %9.1f GarrisonNum %2d / %2d (%2d units) needed for garrison in %s, %20s, Army name: %16s\n",
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Agent %16x (%9x) Defense: %9.1f GarrisonStrength: %9.1f / %9.1f GarrisonNum %2d / %2d (%2d units) (%20s, Army name: %16s) needed for garrison in %s\n",
 				                                                       agent_iter->second,
 				                                                       agent_iter->second->Get_Army().m_id,
 				                                                       agent_iter->first,
@@ -2227,9 +2246,9 @@ void Scheduler::Assign_Garrison()
 				                                                       current_garrison,
 				                                                       needed_garrison,
 				                                                       agent_iter->second->Get_Army()->Num(),
-				                                                       city.GetName(),
 				                                                       g_theUnitDB->GetNameStr(agent_iter->second->Get_Army()->Get(0).GetType()),
-				                                                       agent_iter->second->Get_Army()->GetName()
+				                                                       agent_iter->second->Get_Army()->GetName(),
+				                                                       city.GetName()
 				          ));
 
 				if(agent_iter->second->Has_Any_Goal())
@@ -2239,15 +2258,15 @@ void Scheduler::Assign_Garrison()
 					MapPoint dest_pos = goal_ptr->Get_Target_Pos();     // Get cheap target position first, no need for pillage checking, yet.
 					MapPoint curr_pos = agent_iter->second->Get_Pos();
 
-					if(dest_pos != curr_pos) // Agents with other goals have to be freed
+					// If it is already here for garrison, no rollback is needed
+					bool needsRollback = hasGarrison && !g_theGoalDB->Get(goal_ptr->Get_Goal_Type())->GetIsGarrison();
+					if(dest_pos != curr_pos || needsRollback) // Agents with other goals have to be freed
 					{
-						AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Remove %s (%9x) for agent %9x (%9x) for garrison in %s, %20s, Army name: %16s\n",
+						AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Remove %s (%9x) for agent %9x (%9x) for garrison in %s\n",
 						                                                       g_theGoalDB->GetNameStr(agent_iter->second->Get_Goal_Type()),
 						                                                       agent_iter->second->Get_Goal(),
 						                                                       agent_iter->second, agent_iter->second->Get_Army().m_id,
-						                                                       city.GetName(),
-						                                                       g_theUnitDB->GetNameStr(agent_iter->second->Get_Army()->Get(0).GetType()),
-						                                                       agent_iter->second->Get_Army()->GetName()
+						                                                       city.GetName()
 						          ));
 
 						goal_ptr->Rollback_Agent(agent_iter->second);
@@ -2264,6 +2283,8 @@ void Scheduler::Assign_Garrison()
 					MapPoint dest_pos = goal_ptr->Get_Target_Pos();     // Get cheap target position first, no need for pillage checking, yet.
 					MapPoint curr_pos = agent_iter->second->Get_Pos();
 
+					// Needs only a rollback if it was a garrison goal
+					bool needsRollback = hasGarrison && g_theGoalDB->Get(goal_ptr->Get_Goal_Type())->GetIsGarrison();
 					if(dest_pos == curr_pos) // Agents with goals here have to be freed
 					{
 						AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Remove %s (%9x) for agent %9x (%9x) in %s not needed for garrison\n", g_theGoalDB->GetNameStr(agent_iter->second->Get_Goal_Type()), agent_iter->second->Get_Goal(), agent_iter->second, agent_iter->second->Get_Army().m_id, city.GetName()));
@@ -2271,7 +2292,14 @@ void Scheduler::Assign_Garrison()
 					}
 				}
 
-				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Agent %16x (%9x) Defense: %9.1f %s (Not needed for city garrison)\n", agent_iter->second, agent_iter->second->Get_Army().m_id, city.GetName()));
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, -1, -1,("Agent %16x (%9x) Defense: %9.1f, %20s, Army name: %16s not needed for garrison in %s\n",
+				                                                       agent_iter->second,
+				                                                       agent_iter->second->Get_Army().m_id,
+				                                                       agent_iter->first,
+				                                                       g_theUnitDB->GetNameStr(agent_iter->second->Get_Army()->Get(0).GetType()),
+				                                                       agent_iter->second->Get_Army()->GetName(),
+				                                                       city.GetName()
+				          ));
 			}
 		}
 
