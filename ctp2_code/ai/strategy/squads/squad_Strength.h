@@ -47,7 +47,7 @@ class MapPoint;
 class Squad_Strength final
 {
 public:
-	Squad_Strength(sint8 agent_count = 0)
+	Squad_Strength(sint8 unit_count = 0)
 	: m_attack_str       (0.0),
 	  m_defense_str      (0.0),
 	  m_ranged_str       (0.0),
@@ -55,7 +55,7 @@ public:
 	  m_water_bombard_str(0.0),
 	  m_air_bombard_str  (0.0),
 	  m_value            (0.0),
-	  m_agent_count      (agent_count),
+	  m_unit_count       (unit_count),
 	  m_transport        (0),
 	  m_defenders        (0),
 	  m_ranged           (0)
@@ -71,8 +71,8 @@ public:
 	Squad_Strength & operator+=(const Squad_Strength & add_me);
 	Squad_Strength & operator-=(const Squad_Strength & remove_me);
 
-	sint8 Get_Agent_Count()                    const { return m_agent_count; };
-	void  Set_Agent_Count(const sint32 & count)      { m_agent_count = count; };
+	sint8 Get_Agent_Count()                    const { return m_unit_count;  };
+	void  Set_Agent_Count(const sint32 & count)      { m_unit_count = count; };
 
 	void Add_Agent_Strength(const Agent_ptr & agent);
 	void Remove_Agent_Strength(const Agent_ptr & agent);
@@ -129,7 +129,7 @@ private:
 	float m_value;
 
 	// Can get negative in the sense what is missing
-	sint8 m_agent_count;
+	sint8 m_unit_count;
 	sint8 m_transport;
 	sint8 m_defenders;
 	sint8 m_ranged;
@@ -147,7 +147,7 @@ public:
 		DPRINTF(k_DBG_AI, ("m_water_bombard_str: %d\n", sizeof(m_water_bombard_str)));
 		DPRINTF(k_DBG_AI, ("m_air_bombard_str: %d\n", sizeof(m_air_bombard_str)));
 		DPRINTF(k_DBG_AI, ("m_value: %d\n", sizeof(m_value)));
-		DPRINTF(k_DBG_AI, ("m_agent_count: %d\n", sizeof(m_agent_count)));
+		DPRINTF(k_DBG_AI, ("m_unit_count: %d\n", sizeof(m_unit_count)));
 		DPRINTF(k_DBG_AI, ("m_transport: %d\n", sizeof(m_transport)));
 		DPRINTF(k_DBG_AI, ("m_defenders: %d\n", sizeof(m_defenders)));
 		DPRINTF(k_DBG_AI, ("m_ranged: %d\n", sizeof(m_ranged)));

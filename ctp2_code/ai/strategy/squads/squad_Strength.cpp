@@ -75,9 +75,9 @@ bool Squad_Strength::operator> (const Squad_Strength &squad_strength) const
 	float const attack_cpr  = (m_attack_str  - squad_strength.m_attack_str );
 	// Defense difference
 	float const defense_cpr = (m_defense_str - squad_strength.m_defense_str);
-	// ranged difference
+	// Ranged difference
 	float const ranged_cpr  = (m_ranged_str  - squad_strength.m_ranged_str );
-	// value difference
+	// Value difference
 	float const value_cpr   = (m_value       - squad_strength.m_value      );
 
 	float const battle_cpr  = attack_cpr + defense_cpr + ranged_cpr + value_cpr;
@@ -90,15 +90,15 @@ bool Squad_Strength::operator> (const Squad_Strength &squad_strength) const
 		return false;
 	}
 
-	// Equal battle strength: test the agent count
+	// Equal battle strength: test the unit count
 
-	if (m_agent_count > 0 && squad_strength.m_agent_count > 0){
+	if (m_unit_count > 0 && squad_strength.m_unit_count > 0){
 
-		//If only agent count is a criterion : (for special units for example)
+		//If only unit count is a criterion : (for special units for example)
 		if(m_attack_str + m_defense_str + m_ranged_str + m_value  == 0
 		&& squad_strength.m_attack_str + squad_strength.m_defense_str + squad_strength.m_ranged_str + squad_strength.m_value  == 0
 		){
-			return (m_agent_count > squad_strength.m_agent_count);
+			return (m_unit_count > squad_strength.m_unit_count);
 		}
 	}
 	return false;
@@ -106,7 +106,7 @@ bool Squad_Strength::operator> (const Squad_Strength &squad_strength) const
 
 Squad_Strength & Squad_Strength::operator+=(const Squad_Strength & add_me)
 {
-	m_agent_count       += add_me.m_agent_count;
+	m_unit_count        += add_me.m_unit_count;
 	m_attack_str        += add_me.m_attack_str;
 	m_defense_str       += add_me.m_defense_str;
 	m_ranged_str        += add_me.m_ranged_str;
@@ -123,7 +123,7 @@ Squad_Strength & Squad_Strength::operator+=(const Squad_Strength & add_me)
 
 Squad_Strength & Squad_Strength::operator-=(const Squad_Strength & remove_me)
 {
-	m_agent_count       -= remove_me.m_agent_count;
+	m_unit_count        -= remove_me.m_unit_count;
 	m_attack_str        -= remove_me.m_attack_str;
 	m_defense_str       -= remove_me.m_defense_str;
 	m_ranged_str        -= remove_me.m_ranged_str;
@@ -173,10 +173,10 @@ void Squad_Strength::Set_Army_Strength(const Army & army, bool noCargo)
 	                      true,
 	                      noCargo);
 
-	m_agent_count       = static_cast<sint8>(army.Num());
+	m_unit_count       = static_cast<sint8>(army.Num());
 
 	m_transport = 0;
-	for(sint8 i = m_agent_count; i > 0; --i)
+	for(sint8 i = m_unit_count; i > 0; --i)
 	{
 		Unit const &	unit	= army->Get(i - 1);
 
@@ -189,7 +189,7 @@ void Squad_Strength::Set_Army_Strength(const Army & army, bool noCargo)
 		{
 			// Remove the invalid unit
 			army->DelIndex(i - 1);
-			--m_agent_count;
+			--m_unit_count;
 		}
 	}
 }
@@ -220,7 +220,7 @@ void Squad_Strength::Set_Cargo_Strength(const Army & army)
 	                           m_value,
 	                           true);
 
-	m_agent_count       = static_cast<sint8>(army->GetCargoNum());
+	m_unit_count       = static_cast<sint8>(army->GetCargoNum());
 }
 
 void Squad_Strength::Set_Pos_Strength(const MapPoint & pos)
@@ -233,7 +233,7 @@ void Squad_Strength::Set_Pos_Strength(const MapPoint & pos)
 		return;
 	}
 
-	m_agent_count = army->Num();
+	m_unit_count = army->Num();
 
 	army->ComputeStrength(m_defense_str, // defense and attack reversed
 						  m_attack_str,
@@ -249,7 +249,7 @@ void Squad_Strength::Set_Pos_Strength(const MapPoint & pos)
 
 	m_value = 0.0;
 	m_transport = 0;
-	for(uint8 i = m_agent_count; i > 0; --i)
+	for(uint8 i = m_unit_count; i > 0; --i)
 	{
 		Unit const &	unit	= army->Get(i - 1);
 
@@ -262,7 +262,7 @@ void Squad_Strength::Set_Pos_Strength(const MapPoint & pos)
 		{
 			// Remove the invalid unit
 			army->DelIndex(i - 1);
-			--m_agent_count;
+			--m_unit_count;
 		}
 	}
 }
@@ -306,7 +306,7 @@ void Squad_Strength::Set_Force_Matching( const float attack_ratio,
 
 void Squad_Strength::Set_To_The_Maximum(Squad_Strength otherStrength)
 {
-	m_agent_count       = std::max(m_agent_count      , otherStrength.m_agent_count      );
+	m_unit_count        = std::max(m_unit_count       , otherStrength.m_unit_count       );
 	m_air_bombard_str   = std::max(m_air_bombard_str  , otherStrength.m_air_bombard_str  );
 	m_attack_str        = std::max(m_attack_str       , otherStrength.m_attack_str       );
 	m_defenders         = std::max(m_defenders        , otherStrength.m_defenders        );
@@ -328,7 +328,7 @@ bool Squad_Strength::NothingNeeded() const
 	    && m_defense_str       >= 0.0f
 	    && m_ranged_str        >= 0.0f
 	    && m_value             >= 0.0f
-	    && m_agent_count       >= 0
+	    && m_unit_count        >= 0
 	    && m_transport         >= 0
 	    && m_defenders         >= 0
 	    && m_ranged            >= 0;
@@ -344,7 +344,7 @@ float Squad_Strength::GetTotalMissing(const Squad_Strength & otherStrength) cons
 	float water_bombard = m_water_bombard_str - otherStrength.m_water_bombard_str;
 	float air_bombard   = m_air_bombard_str   - otherStrength.m_air_bombard_str;
 
-	sint8 count         = m_agent_count       - otherStrength.m_agent_count;
+	sint8 count         = m_unit_count        - otherStrength.m_unit_count;
 
 	return std::max(0.0f, attack)
 	     + std::max(0.0f, defense)
@@ -365,7 +365,7 @@ bool Squad_Strength::HasEnough(const Squad_Strength & otherStrength, bool ignore
 	    && m_defense_str       >= otherStrength.m_defense_str
 	    && m_ranged_str        >= otherStrength.m_ranged_str
 	    && m_value             >= otherStrength.m_value
-	    && m_agent_count       >= otherStrength.m_agent_count;
+	    && m_unit_count        >= otherStrength.m_unit_count;
 }
 
 void Squad_Strength::Log_Debug_Info(const int & log, sint32 playerId, sint32 goalType, const char * text) const
@@ -381,7 +381,7 @@ void Squad_Strength::Log_Debug_Info(const int & log, sint32 playerId, sint32 goa
 	                                         "\tm_defense_str       %14.6f"
 	                                         "\tm_ranged_str        %14.6f"
 	                                         "\tm_value             %14.6f"
-	                                         "\tm_agent_count       %d"
+	                                         "\tm_unit_count        %d"
 	                                         "\tm_transport         %d"
 	                                         "\tm_defenders         %d"
 	                                         "\tm_ranged            %d\n"
@@ -393,7 +393,7 @@ void Squad_Strength::Log_Debug_Info(const int & log, sint32 playerId, sint32 goa
 	                                       , m_defense_str
 	                                       , m_ranged_str
 	                                       , m_value
-	                                       , m_agent_count
+	                                       , m_unit_count
 	                                       , m_transport
 	                                       , m_defenders
 	                                       , m_ranged
