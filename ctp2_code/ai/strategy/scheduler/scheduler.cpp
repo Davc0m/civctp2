@@ -1504,7 +1504,7 @@ bool Scheduler::Prune_Goals()
 		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1, ("\n"));
 #endif
 
-		sint32 goals_added = 0;
+		sint32 goals_evaluated = 0;
 
 		while(goal_ptr_iter != pruned_goal_iter &&
 		      goal_ptr_iter != m_goals_of_type[goal_type].end()
@@ -1512,14 +1512,14 @@ bool Scheduler::Prune_Goals()
 			Goal_ptr goal_ptr     = goal_ptr_iter->second;
 			Utility  raw_priority = goal_ptr_iter->first;
 
-			bool ok_to_match_goal = (goals_added < max_eval);
+			bool ok_to_match_goal = (goals_evaluated < max_eval);
 
 			ok_to_match_goal &= (raw_priority != Goal::BAD_UTILITY);
 
 			if(ok_to_match_goal)
 			{
 				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1,
-					("\t%3d: [%x] of %s is being added.\n", goals_added, goal_ptr_iter->second, g_theGoalDB->GetNameStr(goal_type)));
+					("\t%3d: [%x] of %s is being evaluated.\n", goals_evaluated, goal_ptr, g_theGoalDB->GetNameStr(goal_type)));
 				if(goal_ptr->Get_Matches_Num() == 0)
 				{
 					Add_New_Matches_For_Goal(goal_ptr); // This consumes the most time, but it seems this cannot be improved.
@@ -1527,14 +1527,12 @@ bool Scheduler::Prune_Goals()
 					goal_ptr->Recompute_Matching_Value();
 				}
 
-				m_goals.push_back(goal_ptr);
-
 				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1,
-					("\t%3d: [%x] of %s has been added.\n", goals_added, goal_ptr_iter->second, g_theGoalDB->GetNameStr(goal_type)));
-				goal_ptr_iter->second->Log_Debug_Info(k_DBG_SCHEDULER_DETAIL);
+					("\t%3d: [%x] of %s has been evaluated.\n", goals_evaluated, goal_ptr, g_theGoalDB->GetNameStr(goal_type)));
+				goal_ptr->Log_Debug_Info(k_DBG_SCHEDULER_DETAIL);
 				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1, ("\n"));
 
-				goals_added++;
+				goals_evaluated++;
 				goal_ptr_iter++;
 			}
 			else
@@ -1553,6 +1551,38 @@ bool Scheduler::Prune_Goals()
 #endif
 
 				goal_ptr_iter++;
+			}
+		}
+
+		m_goals_of_type[goal_type].sort(std::greater<Sorted_Goal_ptr>());
+
+		sint32 goals_added = 0;
+		goal_ptr_iter = m_goals_of_type[goal_type].begin();
+		while(goal_ptr_iter != pruned_goal_iter)
+		{
+			if(goals_added < max_exec)
+			{
+				Goal_ptr goal_ptr     = goal_ptr_iter->second;
+				m_goals.push_back(goal_ptr);
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1,
+					("\t%3d: [%x] of %s has been added.\n", goals_added, goal_ptr, g_theGoalDB->GetNameStr(goal_type)));
+//				goal_ptr->Log_Debug_Info(k_DBG_SCHEDULER_DETAIL); // Enable if you really need this
+				goal_ptr_iter++;
+				goals_added++;
+
+#if defined(_DEBUG) || defined(USE_LOGGING)
+				if(goal_ptr_iter == pruned_goal_iter)
+				{
+					AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1,
+						("\t%3d goals of %s have been added, that were all goals.\n", goals_added, g_theGoalDB->GetNameStr(goal_type)));
+				}
+#endif
+			}
+			else
+			{
+				AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, goal_type, -1,
+					("\t%3d goals of %s have been added, the maximum number of goals executed.\n", goals_added, g_theGoalDB->GetNameStr(goal_type)));
+				break;
 			}
 		}
 	}

@@ -813,7 +813,8 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update)
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
 		           ("\t\t[%3d] Enough ressources found for goal %s\n", count, g_theGoalDB->Get(m_goal_type)->GetNameText()));
 	}
-	else if(!projected_strength.HasEnough(m_current_needed_strength)
+	else if( isGarrison
+	     && !projected_strength.HasEnough(m_current_needed_strength)
 	     &&  projected_strength.Get_Agent_Count() >= m_current_needed_strength.Get_Agent_Count()
 	){
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
