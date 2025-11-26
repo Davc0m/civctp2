@@ -3833,10 +3833,29 @@ STRATEGY_DIPLOMATIC_DEFAULT {
 
 STRATEGY_DEFENSE_NONE {
 
-    // minimum number of units to keep in cities as a garrison
+    // These things reserve units for garrison. Garrison units
+    // cannot used for anything else then city defense so don't
+    // go to high with these numbers otherwise the AI will not
+    // do anything else then city defense. If these numbers are
+    // too low the AI will happily conquer cities while leaving
+    // its cities undfended.
+
+    // Minimum number of units to keep in cities as a garrison
     OffensiveGarrisonCount  0
     DefensiveGarrisonCount  1
     RangedGarrisonCount     0
+
+    // The actual number of units could be higher, if they are needed to repress slave uprisings
+    // But additional units can also be assigned to garrison if the treat level requires.
+
+    // Add so many units to the garrison if the thread level requires it.
+    // If you set a high number then every unit that is needed for the
+    // thread level added, of course these units cannot be used for anything else.
+    // This is now set to 0 the default, as a higher number interferes with the
+    // other goals of the AI.
+    // You can also set this number negative, but then the AI may a have trouble with 
+    // repressing slave uprisings.
+    AdditionalGarrisonUnitsIfNeeded 0
 }
 
 STRATEGY_DEFENSE_VERY_LOW {

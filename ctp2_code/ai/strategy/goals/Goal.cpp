@@ -591,7 +591,7 @@ Utility Goal::Mark_For_Garrison(Plan_List & matches)
 			continue;
 
 		if(!projected_strength.HasEnough(m_current_needed_strength)
-		&&  projected_strength.Get_Unit_Count() < m_current_needed_strength.Get_Unit_Count()
+		&& !projected_strength.HasEnoughGarrisonUnits(m_current_needed_strength, m_playerId)
 		){
 			Utility matchUtility = match_iter->Get_Matching_Value();
 
@@ -684,7 +684,7 @@ Utility Goal::Mark_For_Garrison(Plan_List & matches)
 			("\t\t[%3d] Enough ressources found for goal %s\n", count, g_theGoalDB->Get(m_goal_type)->GetNameText()));
 	}
 	else if(!projected_strength.HasEnough(m_current_needed_strength)
-	     &&  projected_strength.Get_Unit_Count() >= m_current_needed_strength.Get_Unit_Count()
+	     &&  projected_strength.HasEnoughGarrisonUnits(m_current_needed_strength, m_playerId)
 	){
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
 			("\t\t[%3d] Maximum number of units found, use ressources for other goals than %s\n", count, g_theGoalDB->Get(m_goal_type)->GetNameText()));
@@ -760,7 +760,7 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update)
 			continue;
 
 		if( isGarrison && !projected_strength.HasEnough(m_current_needed_strength)
-		&&                 projected_strength.Get_Unit_Count() < m_current_needed_strength.Get_Unit_Count()
+		&&                !projected_strength.HasEnoughGarrisonUnits(m_current_needed_strength, m_playerId)
 		|| !isGarrison && !projected_strength.HasEnough(m_current_needed_strength)
 //		||  goal_record->GetNeverSatisfied() // Should be considered in Commit_Agents
 		){
@@ -817,7 +817,7 @@ Utility Goal::Recompute_Matching_Value(Plan_List & matches, const bool update)
 	}
 	else if( isGarrison
 	     && !projected_strength.HasEnough(m_current_needed_strength)
-	     &&  projected_strength.Get_Unit_Count() >= m_current_needed_strength.Get_Unit_Count()
+	     &&  projected_strength.HasEnoughGarrisonUnits(m_current_needed_strength, m_playerId)
 	){
 		AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
 			("\t\t[%3d] Maximum number of units found, use ressources for other goals than %s\n", count, g_theGoalDB->Get(m_goal_type)->GetNameText()));
@@ -995,7 +995,7 @@ void Goal::Commit_Agents()
 		}
 		else if(Is_Satisfied()
 		     || IsTotallyComplete()
-		     || isGarrison && m_current_attacking_strength.Get_Unit_Count() >= m_current_needed_strength.Get_Unit_Count()
+		     || isGarrison && m_current_attacking_strength.HasEnoughGarrisonUnits(m_current_needed_strength, m_playerId)
 		){
 			AI_DPRINTF(k_DBG_SCHEDULER_DETAIL, m_playerId, m_goal_type, -1,
 				("\t\tNO MORE AGENTS NEEDED:           (goal: %x agent: %x, id: 0%x)\n", this, match_iter->Get_Agent(), match_iter->Get_Agent()->Get_Army().m_id));

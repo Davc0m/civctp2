@@ -275,10 +275,13 @@ Strategy {
 	Bit (Record UnitBuildList) AirTransportUnitList
 	Bit (Record UnitBuildList) FreightUnitList
 
-	// minimum number of units to keep in cities as a garrison
+	// Minimum number of units to keep in cities as a garrison
 	Bit (Int) OffensiveGarrisonCount
 	Bit (Int) DefensiveGarrisonCount
 	Bit (Int) RangedGarrisonCount
+
+	// Additional units to reserve for garrison if the force match requires that
+	Int AdditionalGarrisonUnitsIfNeeded = 0
 
 	struct BuildListSequenceElement {
 		// A city that matches more than one criteria uses the one

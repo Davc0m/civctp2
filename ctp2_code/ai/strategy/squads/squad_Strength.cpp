@@ -41,6 +41,7 @@
 
 #include "agent.h"
 #include "cellunitlist.h"
+#include "Diplomat.h"
 #include "UnitRecord.h"
 #include "World.h"
 #include "ctpaidebug.h"
@@ -366,6 +367,13 @@ bool Squad_Strength::HasEnough(const Squad_Strength & otherStrength, bool ignore
 	    && m_ranged_str        >= otherStrength.m_ranged_str
 	    && m_value             >= otherStrength.m_value
 	    && m_unit_count        >= otherStrength.m_unit_count;
+}
+
+bool Squad_Strength::HasEnoughGarrisonUnits(const Squad_Strength & otherStrength, const sint32 playerId) const
+{
+	const StrategyRecord &strategy = Diplomat::GetDiplomat(playerId).GetCurrentStrategy();
+
+	return m_unit_count        >= otherStrength.m_unit_count + strategy.GetAdditionalGarrisonUnitsIfNeeded();
 }
 
 void Squad_Strength::Log_Debug_Info(const int & log, sint32 playerId, sint32 goalType, const char * text) const
