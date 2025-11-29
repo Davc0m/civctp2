@@ -967,26 +967,44 @@ void Scheduler::Associate_Goals_With_Sub_Goals()
 		if(!g_theGoalDB->Get(goal_type)->GetSubGoalIndex(sub_goal))
 			continue;
 
+		Assert(m_goals_of_type[goal_type].size() == m_goals_of_type[sub_goal].size());
+
 		if(m_goals_of_type[goal_type].size() != m_goals_of_type[sub_goal].size())
 			continue;
 
 		Sorted_Goal_Iter tmp_goal_iter =
 			m_goals_of_type[goal_type].begin();
 
-		Sorted_Goal_Iter sub_goal_iter =
-			m_goals_of_type[sub_goal].begin();
+		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1,
+			("\tAcossiate goals of type %s with subgoals of type %s\n", g_theGoalDB->Get(goal_type)->GetNameText(), g_theGoalDB->Get(sub_goal)->GetNameText()));
 
 		while(tmp_goal_iter != m_goals_of_type[goal_type].end())
 		{
+			Sorted_Goal_Iter sub_goal_iter =
+				m_goals_of_type[sub_goal].begin();
+
 			Goal_ptr the_goal = tmp_goal_iter->second;
-			Goal_ptr sub_goal = sub_goal_iter->second;
 
-			if(the_goal->Get_Target_Pos() != sub_goal->Get_Target_Pos())
-				continue;
+			// Goal and subgoal may not be in the same order
+			while(sub_goal_iter != m_goals_of_type[sub_goal].end())
+			{
+				Goal_ptr sub_goal = sub_goal_iter->second;
 
-			the_goal->SetSubGoal(sub_goal);
+				MapPoint     tagetPos = the_goal->Get_Target_Pos();
+				MapPoint subTaregtPos = sub_goal->Get_Target_Pos();
+
+				if(tagetPos == subTaregtPos)
+				{
+					AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1,
+						("\tAcossiate %x @ %s (%d, %d) with %x @ %s (%d, %d) \n", the_goal, the_goal->GetTargetName(), tagetPos.x, tagetPos.y, sub_goal, sub_goal->GetTargetName(), subTaregtPos.x, subTaregtPos.y));
+					the_goal->SetSubGoal(sub_goal);
+					break;
+				}
+
+				sub_goal_iter++;
+			}
+
 			tmp_goal_iter++;
-			sub_goal_iter++;
 		}
 	}
 }
