@@ -2221,6 +2221,7 @@ void CivApp::CleanupGameUI(void)
 	initialplayscreen_Cleanup();
 
 	DiplomacyDetails::Cleanup();
+	g_c3ui->ClearSecondary();
 }
 
 void CivApp::CleanupGame(bool keepScenInfo)
