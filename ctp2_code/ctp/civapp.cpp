@@ -2221,7 +2221,6 @@ void CivApp::CleanupGameUI(void)
 	initialplayscreen_Cleanup();
 
 	DiplomacyDetails::Cleanup();
-	g_c3ui->ClearSecondary();
 }
 
 void CivApp::CleanupGame(bool keepScenInfo)
@@ -2263,7 +2262,14 @@ void CivApp::CleanupGame(bool keepScenInfo)
 		g_civPaths->ClearCurScenarioPackPath();
 		memset(g_scenarioName, '\0', k_SCENARIO_NAME_MAX);
 		CleanupAppDB();
+		g_c3ui->BlackScreen(); // Clears primary
+		g_c3ui->ClearSecondary();
 		InitializeAppDB();
+	}
+	else
+	{
+		g_c3ui->BlackScreen(); // Clears primary
+		g_c3ui->ClearSecondary();
 	}
 
 #if defined(_DEBUG) && defined(_MEMORYLOGGING) && defined(_DEBUG_MEMORY)
@@ -2275,8 +2281,6 @@ void CivApp::CleanupGame(bool keepScenInfo)
 	g_launchIntoCheatMode   = FALSE;
 	g_god                   = FALSE;
 	g_isCheatModeOn         = FALSE;
-
-	g_c3ui->BlackScreen();
 }
 
 void CivApp::StartMessageSystem()
