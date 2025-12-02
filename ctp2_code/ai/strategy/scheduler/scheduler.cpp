@@ -688,7 +688,7 @@ void Scheduler::Match_Resources(const bool move_armies)
 		if(newMatchValue == Goal::BAD_UTILITY)
 		{
 			AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_ptr->Get_Goal_Type(), -1,
-				("\t\tGOAL (goal: %x)(agent count: %d) -- Goal with bad utility, trying agian in next cycle.\n",
+				("\t\tGOAL (goal: %x)(agent count: %d) -- Goal with bad utility, removing goal from queue, maybe next turn.\n",
 						goal_ptr, goal_ptr->Get_Agent_Count()));
 
 			// City garrison problem
@@ -696,17 +696,6 @@ void Scheduler::Match_Resources(const bool move_armies)
 
 			// Actually should be checked in the next cycle, but there still seems to be something wrong.
 			goal_iter = m_goals.erase(goal_iter);
-
-
-			/*
-			// Move to the end
-			m_goals.splice
-			              (
-			               m_goals.end(),
-			               m_goals,
-			               tmp_goal_iter
-			              );
-			*/
 
 			continue;
 		}
@@ -902,21 +891,36 @@ void Scheduler::Match_Resources(const bool move_armies)
 #if defined(_DEBUG)
 	size_t committed_agents_test = 0;
 	loopCount = 0;
-	for
-	(
-	    Goal_List::iterator goal_iter2  = m_goals.begin();
-	                        goal_iter2 != m_goals.end();
-	                      ++goal_iter2
-	)
+	Goal_List::iterator goal_iter2 = m_goals.begin();
+	for (; goal_iter2 != m_goals.end(); ++goal_iter2)
 	{
+		Goal_ptr goal_ptr        = static_cast<Goal_ptr>(*goal_iter2);
+		committed_agents_test   += goal_ptr->Get_Agent_Count();
+
 		loopCount++;
 		if (loopCount == loopCountBadUtility)
 			break;
-		Goal_ptr goal_ptr        = static_cast<Goal_ptr>(*goal_iter2);
-		committed_agents_test   += goal_ptr->Get_Agent_Count();
 	}
 
 	Assert(committed_agents_test == committed_agents);
+
+	if(committed_agents_test == committed_agents)
+		return;
+
+	size_t committed_agents_not_counted = 0;
+	for (; goal_iter2 != m_goals.end(); ++goal_iter2)
+	{
+		Goal_ptr goal_ptr        = static_cast<Goal_ptr>(*goal_iter2);
+
+		if(goal_ptr->Get_Agent_Count() > 0)
+		{
+			committed_agents_not_counted += goal_ptr->Get_Agent_Count();
+			AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_ptr->Get_Goal_Type(), -1, ("%d agents not counted from goal: %x)\n", goal_ptr->Get_Agent_Count(), goal_ptr));
+			goal_ptr->Log_Debug_Info(k_DBG_SCHEDULER_DETAIL);
+		}
+	}
+
+	Assert(committed_agents_test + committed_agents_not_counted == committed_agents);
 #endif
 }
 
@@ -1394,7 +1398,7 @@ void Scheduler::Prioritize_Goals()
 {
 	Sorted_Goal_Iter sorted_goal_iter;
 	time_t t1 = GetTickCount();
-	time_t t2;
+	time_t t2 = t1;
 
 	Goal_Vector::iterator generic_goal_iter = m_generic_goals.begin();
 
@@ -1445,12 +1449,12 @@ void Scheduler::Prioritize_Goals()
 			}
 		}
 
+		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1, ("//  Before recalculation:       Elapsed time = %d ms\n", (t2 - t1)));
 		t2 = GetTickCount();
 		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1, ("//  Recalculate match value:    Elapsed time = %d ms\n", (t2 - t1)));
 
-		// Most time is spend here at sorting.
 		m_goals_of_type[goal_type].sort(std::greater<Sorted_Goal_ptr>());
-		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1, ("//  Sorted goal:                Elapsed time = %d ms\n", (t2 - t1)));
+		AI_DPRINTF(k_DBG_SCHEDULER, m_playerId, goal_type, -1, ("//  Sorted goals:               Elapsed time = %d ms\n", (t2 - t1)));
 		t2 = GetTickCount();
 
 		++generic_goal_iter;
