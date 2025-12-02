@@ -33,12 +33,16 @@
 
 GOAL_DEFEND {
   // This brings units to the target city for defence.
-  // This goal used units that have not been used for siege.
+  // This goal uses units that have not been used for siege.
   // It also consideres the units used in GOAL_GARRISON
   // targeting the same place.
   // So that this works GOAL_DEFEND needs lower prijority
   // than GOAL_SEIGE and GOAL_GARRISON. And GOAL_GARRISON
   // needs higher priority than GOAL_SEIGE.
+  // The goal GOAL_GARRISON allows the AI to set units aside
+  // for garrison, even if they are not in the target city. With
+  // GOAL_GARRISON it can move the units into the target city
+  // without committing them to other goals.
   ExecuteIncrementally
   UnGroupFirst
 

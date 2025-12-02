@@ -192,7 +192,6 @@ public:
 	void Rollback_Emptied_Transporters();
 	void Sort_Goal_Matches_If_Necessary();
 	void Assign_Garrison();
-	void Old_Assign_Garrison();
 	void ResetTransport();
 
 	Sorted_Goal_List GetGoalsOfType(const GOAL_TYPE & type) { return m_goals_of_type[type]; };
