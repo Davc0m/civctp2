@@ -398,16 +398,17 @@ STDEHANDLER(ArmyExpelOrderEvent)
 
 	a->AddOrders(UNIT_ORDER_EXPEL , pos);
 	
-	if(g_selected_item->IsAutoCenterOn() 
-	    && !g_director->TileWillBeCompletelyVisible(pos.x, pos.y)
-	    && g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)
-	    ){ // center on expell pos if generally visible but not in current view
-	    g_director->AddCenterMap(pos);
-	    }
+	if( g_selected_item->IsAutoCenterOn()
+	&& !g_director->TileWillBeCompletelyVisible(pos.x, pos.y)
+	&&  g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)
+	){ // center on expell pos if generally visible but not in current view
+		g_director->AddCenterMap(pos);
+	}
 	
-	if(g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)){ // game sound only if expel position is visible (not in FOW)
-	    g_soundManager->AddGameSound(GAMESOUNDS_ALERT);
-	    }
+	if(g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)) // game sound only if expel position is visible (not in FOW)
+	{
+		g_soundManager->AddGameSound(GAMESOUNDS_ALERT);
+	}
 
 	return GEV_HD_Continue;
 }
@@ -822,6 +823,7 @@ STDEHANDLER(ArmyMoveEvent)
 				Assert(defender->IsVisible(owner));
 				if( defender->CanBeExpelled()
 				&&  defender->IsVisible(owner)
+				&&  army->CanExpel()
 				&& !g_player[owner]->HasAllianceWith(defender->GetOwner())
 				){
 					DPRINTF(k_DBG_GAMESTATE, ("Army 0x%lx, %s (%s) of player %d kicks out %s of player %d.\n", army.m_id, army->GetName(), g_theUnitDB->GetNameStr(army->Get(0).GetType()), owner, g_theUnitDB->GetNameStr(defender->Get(0).GetType()), defender->GetOwner()));
