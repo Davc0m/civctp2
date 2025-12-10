@@ -9,6 +9,8 @@
 
 #if defined(__AUI_USE_SDL__)
 
+#include "c3files.h"
+
 #if defined(USE_SDL_FFMPEG)
 
 extern "C" {
@@ -21,7 +23,6 @@ extern "C" {
 #include <SDL2/SDL.h>
 #include "profileDB.h"
 #include "aui_sdlsurface.h"
-#include "c3files.h"
 
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_FRAMES 25
