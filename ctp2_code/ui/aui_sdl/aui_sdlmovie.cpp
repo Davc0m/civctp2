@@ -9,6 +9,8 @@
 
 #if defined(__AUI_USE_SDL__)
 
+#include "c3files.h"
+
 #if defined(USE_SDL_FFMPEG)
 
 extern "C" {
@@ -435,7 +437,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame) {
 				if (d->queue->abort_request)
 					return -1;
 
-				switch (d->avctx->codec_type) {
+				switch (d->avctx->codec_type)
+				{
 					case AVMEDIA_TYPE_VIDEO:
 						ret = avcodec_receive_frame(d->avctx, frame);
 						if (ret >= 0) {
@@ -455,6 +458,8 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame) {
 								d->next_pts_tb = tb;
 							}
 						}
+						break;
+					default:
 						break;
 				}
 				if (ret == AVERROR_EOF) {
@@ -702,7 +707,8 @@ static void get_sdl_pix_fmt_and_blendmode(int format, Uint32 *sdl_pix_fmt, SDL_B
 		format == AV_PIX_FMT_BGR32   ||
 		format == AV_PIX_FMT_BGR32_1)
 		*sdl_blendmode = SDL_BLENDMODE_BLEND;
-	for (i = 0; i < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; i++) {
+
+	for (i = 0; i < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; i++) { // Not clean
 		if (format == sdl_texture_format_map[i].format) {
 			*sdl_pix_fmt = sdl_texture_format_map[i].texture_fmt;
 			return;
@@ -1025,14 +1031,6 @@ static void toggle_pause(VideoState *is)
 {
 	stream_toggle_pause(is);
 	is->step = 0;
-}
-
-static void step_to_next_frame(VideoState *is)
-{
-	/* if the stream is paused unpause it, then step */
-	if (is->paused)
-		stream_toggle_pause(is);
-	is->step = 1;
 }
 
 static double compute_target_delay(double delay, VideoState *is)
@@ -1719,10 +1717,8 @@ static int read_thread(void *arg)
 	int err, ret;
 	int st_index[AVMEDIA_TYPE_NB];
 	AVPacket pkt1, *pkt = &pkt1;
-	int64_t stream_start_time;
 	SDL_mutex *wait_mutex = SDL_CreateMutex();
 	int scan_all_pmts_set = 0;
-	int64_t pkt_ts;
 
 	if (!wait_mutex) {
 		av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
@@ -1854,8 +1850,6 @@ static int read_thread(void *arg)
 			is->eof = 0;
 		}
 		/* check if packet is in play range specified by user, then queue, otherwise discard */
-		stream_start_time = ic->streams[pkt->stream_index]->start_time;
-		pkt_ts = pkt->pts == AV_NOPTS_VALUE ? pkt->dts : pkt->pts;
 		if (pkt->stream_index == is->audio_stream) {
 			packet_queue_put(&is->audioq, pkt);
 		} else if (pkt->stream_index == is->video_stream
@@ -1925,7 +1919,6 @@ static VideoState *stream_open(const char *filename, int startup_volume)
 fail:
 	stream_close(is);
 	return NULL;
-
 }
 
 static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
@@ -1945,6 +1938,9 @@ static void refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
 		remaining_time = REFRESH_RATE;
 		if (!is->paused || is->force_refresh)
 			video_refresh(is, &remaining_time);
+
+		if(is->eof == 1)
+			break;
 
 		SDL_PumpEvents();
 	}
@@ -2001,6 +1997,11 @@ AUI_ERRCODE aui_SDLMovie::Unload()
 
 AUI_ERRCODE aui_SDLMovie::Open(uint32 flags, aui_Surface *surface, RECT *rect)
 {
+	if(!c3files_PathIsValid(m_filename))
+	{
+		return AUI_ERRCODE_MOVIEFAILED;
+	}
+
 #if defined(USE_SDL_FFMPEG)
 	if (!m_renderer || (!(flags & k_AUI_MOVIE_PLAYFLAG_ONSCREEN) && !m_background))
 	{
@@ -2128,9 +2129,13 @@ AUI_ERRCODE aui_SDLMovie::Process()
 		SDL_Event event;
 
 		bool movieFinished = false;
-		while (!movieFinished) {
+		while (!movieFinished)
+		{
 			refresh_loop_wait_event(m_videoState, &event);
 			movieFinished = HandleMovieEvent(event);
+
+			if(m_videoState->eof == 1)
+				break;
 		}
 		Close();
 	}
@@ -2210,7 +2215,6 @@ bool aui_SDLMovie::HandleMovieEvent(SDL_Event &event)
 	return true;
 #endif
 }
-
 
 bool aui_SDLMovie::InsideMovieArea(int x, int y)
 {

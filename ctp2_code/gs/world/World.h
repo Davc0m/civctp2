@@ -81,12 +81,13 @@ class GoodyHut;
 class CellUnitList;
 class Army;
 class TerrainRecord;
+union Cookie;
 
 typedef Cell * CellPtr;
 typedef CellPtr * CellYarray;
 typedef CellYarray * CellXarray;
 
-typedef bool (FindDistanceCellCallback) (const MapPoint &pos, Cell *cell, void *cookie);
+typedef bool (FindDistanceCellCallback) (const MapPoint &pos, Cell *cell, Cookie cookie);
 
 template <class T> class PQueue;
 struct DistItem;
@@ -503,7 +504,7 @@ public:
     BOOL IsCellZoc(const PLAYER_INDEX &owner, const MapPoint &pos, const BOOL is_check_only_visible);
     BOOL IsMoveZOC(PLAYER_INDEX owner, const MapPoint &start, const MapPoint &dest,
         const BOOL is_check_only_visible);
-    bool IsNextToForeignerOnLand(const MapPoint &pos, PLAYER_INDEX owner) const;
+    bool IsNextToForeigner(const MapPoint &pos, PLAYER_INDEX owner) const;
     bool IsOccupiedByForeigner(const MapPoint &pos, PLAYER_INDEX owner) const;
 
 
@@ -633,10 +634,10 @@ public:
 	void CDMove(sint32 costSoFar, const sint32 x, const sint32 y,
 				sint32 player, sint32 &numCitiesToVisit);
 	void FindDistances(sint32 player, const MapPoint &start, sint32 numHits,
-					   FindDistanceCellCallback *cb, void *cookie);
+					   FindDistanceCellCallback *cb, Cookie cookie);
 	void FDMove(sint32 costSoFar, const sint32 x, const sint32 y,
 				sint32 player, sint32 &numHitsNeeded, FindDistanceCellCallback *cb,
-				void *cookie);
+				Cookie cookie);
 
 	void ClearScratch();
 

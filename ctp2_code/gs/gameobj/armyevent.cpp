@@ -398,16 +398,17 @@ STDEHANDLER(ArmyExpelOrderEvent)
 
 	a->AddOrders(UNIT_ORDER_EXPEL , pos);
 	
-	if(g_selected_item->IsAutoCenterOn() 
-	    && !g_director->TileWillBeCompletelyVisible(pos.x, pos.y)
-	    && g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)
-	    ){ // center on expell pos if generally visible but not in current view
-	    g_director->AddCenterMap(pos);
-	    }
+	if( g_selected_item->IsAutoCenterOn()
+	&& !g_director->TileWillBeCompletelyVisible(pos.x, pos.y)
+	&&  g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)
+	){ // center on expell pos if generally visible but not in current view
+		g_director->AddCenterMap(pos);
+	}
 	
-	if(g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)){ // game sound only if expel position is visible (not in FOW)
-	    g_soundManager->AddGameSound(GAMESOUNDS_ALERT);
-	    }
+	if(g_player[g_selected_item->GetVisiblePlayer()]->IsVisible(pos)) // game sound only if expel position is visible (not in FOW)
+	{
+		g_soundManager->AddGameSound(GAMESOUNDS_ALERT);
+	}
 
 	return GEV_HD_Continue;
 }
@@ -817,7 +818,30 @@ STDEHANDLER(ArmyMoveEvent)
 				}
 			}
 
-			Assert(!g_player[owner]->IsRobot() || Diplomat::GetDiplomat(owner).HasWarOrDesiresPreemptivelyWith(defender->GetOwner()));
+			if(g_player[owner]->IsRobot() && !Diplomat::GetDiplomat(owner).HasWarOrDesiresPreemptivelyWith(defender->GetOwner()))
+			{
+				Assert(defender->IsVisible(owner));
+				if( defender->CanBeExpelled()
+				&&  defender->IsVisible(owner)
+				&&  army->CanExpel()
+				&& !g_player[owner]->HasAllianceWith(defender->GetOwner())
+				){
+					DPRINTF(k_DBG_GAMESTATE, ("Army 0x%lx, %s (%s) of player %d kicks out %s of player %d.\n", army.m_id, army->GetName(), g_theUnitDB->GetNameStr(army->Get(0).GetType()), owner, g_theUnitDB->GetNameStr(defender->Get(0).GetType()), defender->GetOwner()));
+					g_gevManager->AddEvent( GEV_INSERT_AfterCurrent,
+					                        GEV_ExpelOrder,
+					                        GEA_Army, army.m_id,
+					                        GEA_MapPoint, newPos,
+					                        GEA_End);
+				}
+
+				DPRINTF(k_DBG_GAMESTATE, ("Army 0x%lx, %s (%s) of player %d clears current oders to avoid attacking player %d (%s) as it does not desire war.\n", army.m_id, army->GetName(), g_theUnitDB->GetNameStr(army->Get(0).GetType()), owner, defender->GetOwner(), g_theUnitDB->GetNameStr(defender->Get(0).GetType())));
+				g_gevManager->AddEvent(GEV_INSERT_AfterCurrent,
+									   GEV_ClearOrders,
+									   GEA_Army, army,
+									   GEA_End);
+
+				return GEV_HD_Continue;
+			}
 
 			if(g_player[owner]->IsRobot() && army->CanFight(*defender) || g_player[owner]->IsHuman())
 			{
@@ -1161,7 +1185,7 @@ STDEHANDLER(AftermathEvent)
 			army[i].SetFlag(k_UDF_FIRST_MOVE);
 		}
 //		g_director->IncrementPendingGameActions();
-		g_gevManager->AddEvent(GEV_INSERT_AfterCurrent, GEV_VictoryMoveOrder,
+		g_gevManager->AddEvent(GEV_INSERT_Tail, GEV_VictoryMoveOrder,
 							   GEA_Army, army,
 							   GEA_MapPoint, pos,
 							   GEA_End);
@@ -1420,7 +1444,7 @@ STDEHANDLER(DirectorMoveUnitsEvent)
 	UnitActor **restOfStack = NULL;
 	sint32 numRest = a->Num() - 1;
 	if (numRest > 0) {
-		restOfStack = new (UnitActor* [numRest]);
+		restOfStack = new UnitActor* [numRest];
 		a->GetActors(top_src, restOfStack);
 	}
 

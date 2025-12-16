@@ -46,7 +46,7 @@ void DebugCallStack_Close (void);
 void DebugCallStack_Dump (LogClass log_class);
 void DebugCallStack_DumpFrom (LogClass log_class, size_t base_pointer);
 void DebugCallStack_DumpAddress (LogClass log_class, size_t address);
-void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp);
+void DebugCallStack_Save  (size_t *call_stack, int number, size_t Ebp, DWORD framesToSkip);
 
 void DebugCallStack_Show  (LogClass log_class, size_t *call_stack, int number);
 void DebugCallStack_ShowToFile  (LogClass log_class, size_t *call_stack, int number, FILE *file);

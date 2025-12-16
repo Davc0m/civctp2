@@ -88,7 +88,9 @@ bool RobotAstar2::TransportPathCallback (const bool & can_enter,
 			           g_theWorld->IsLand(prev)
 			        || g_theWorld->IsMountain(prev)
 			       )
-			    && g_theWorld->GetContinent(prev) == m_transDestCont
+			    && !g_theWorld->IsWater(prev) // Ocean city and tunnel tiles are both land and sea, just make sure the previous one was not one of those
+			    && !g_theWorld->IsShallowWater(prev)
+			    &&  g_theWorld->GetContinent(prev) == m_transDestCont
 			  )
 			{
 				// Return invalid if we leave the target continent
@@ -104,16 +106,21 @@ bool RobotAstar2::TransportPathCallback (const bool & can_enter,
 		{
 			if
 			  (
-			       (
+			       (   // If we land
 			           g_theWorld->IsLand(pos)
 			        || g_theWorld->IsMountain(pos)
 			       )
 			    && (
 			          ( g_theWorld->IsOccupiedByForeigner  (pos, m_owner) // If the target is a city
-			        && !g_theWorld->IsSurroundedByWater(pos))
-			        ||  g_theWorld->IsNextToForeignerOnLand(pos, m_owner)
+			        && !g_theWorld->IsSurroundedByWater    (pos))
+			        ||  g_theWorld->IsNextToForeigner(pos, m_owner)
 			       )
 			  )
+			{
+				cost += k_MOVE_ISDANGER_COST;
+			}
+			// If we do not land, just avoid some units next, for instance bombardment units
+			else if(g_theWorld->IsNextToForeigner(pos, m_owner))
 			{
 				cost += k_MOVE_ISDANGER_COST;
 			}
@@ -215,7 +222,6 @@ bool RobotAstar2::FindPath( const PathType & pathType,
                             const MapPoint & start,
                             const MapPoint & dest,
                             const bool & check_dest,
-                            const sint32 & trans_dest_cont,
                             const float & trans_max_r,
                             Path & new_path,
                             float & total_cost,
@@ -228,7 +234,7 @@ bool RobotAstar2::FindPath( const PathType & pathType,
 	Path bad_path;
 
 	m_pathType = pathType;
-	m_transDestCont = trans_dest_cont;
+	m_transDestCont = g_theWorld->GetContinent(dest);
 	m_transMaxR = trans_max_r;
 
 	sint32 nUnits;
@@ -325,6 +331,8 @@ bool RobotAstar2::EntryCost( const MapPoint &prev,
 		case PATH_TYPE_DEFENSIVE:
 			r = DefensivePathCallback(r, prev, pos, is_zoc, cost, entry);
 			break;
+		default:
+			break;
 		}
 
 		if(m_is_robot && pos != m_army->RetPos() && pos != m_dest && cost < k_ASTAR_BIG)
@@ -376,6 +384,8 @@ void RobotAstar2::RecalcEntryCost(AstarPoint *parent,
 			case PATH_TYPE_DEFENSIVE:
 				DefensivePathCallback(true, parent->m_pos, node->m_pos, new_is_zoc,
 									  new_entry_cost, new_entry);
+				break;
+			default:
 				break;
 		}
 	}

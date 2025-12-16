@@ -71,17 +71,17 @@ extern CityAstar g_city_astar;
 
 Agent::Agent()
 :
-    m_squad_class       (SQUAD_CLASS_DEFAULT),
-    m_agent_type        (-1),
-    m_goal              (NULL),
     m_squad_strength    (0),
-    m_can_be_executed   (true),
-    m_detached          (false),
-    m_neededForGarrison (false),
+    m_goal              (NULL),
     m_army              (),
     m_playerId          (PLAYER_UNASSIGNED),
     m_targetOrder       (OrderRecord::INDEX_INVALID),
-    m_targetPos         ()
+    m_targetPos         (),
+    m_squad_class       (SQUAD_CLASS_DEFAULT),
+    m_agent_type        (-1),
+    m_can_be_executed   (true),
+    m_detached          (false),
+    m_neededForGarrison (false)
 {
 }
 
@@ -262,13 +262,16 @@ void Agent::Log_Debug_Info(const int & log, const Goal * const goal) const
 	           m_playerId,
 	           goal != NULL ? goal->Get_Goal_Type() : -1,
 	           -1,
-	           ("\t\t   Agent: handle=%x,\tclass=%x,\t(x=%3d,y=%3d),\t (is_used=%d) \t (by_this=%d) \t %20s (%2d units, %2d cargo) \t in %s\n",
+	           ("\t\t   Agent: handle=%x,\tArmy name: %s,\tclass=%x,\t(x=%3d,y=%3d),\t (is_used=%d) \t (by_this=%d) \t (by_sub=%d) \t (garrison=%d) \t %20s (%2d units, %2d cargo) \t in %s\n",
 	            m_army.m_id,
+	            m_army->GetName(),
 	            m_squad_class,
 	            pos.x,
 	            pos.y,
 	            (m_goal ? 1 : 0),
-	            ((goal == m_goal) ? 1 : 0),
+	            ((m_goal == goal) ? 1 : 0),
+	            ((goal != nullptr && m_goal == goal->GetSubGoal()) ? 1 : 0),
+	            m_neededForGarrison ? 1 : 0,
 	            g_theUnitDB->GetNameStr(m_army->Get(0).GetType()),
 	            m_army->Num(),
 	            m_army->GetCargoNum(),
@@ -304,7 +307,6 @@ bool Agent::FindPathToBoard(const uint32 & move_intersection, const MapPoint & d
 	m_army->MinMovementPoints(move_points);
 
 	double trans_max_r = 100.0 / move_points;
-	sint32 cont = g_theWorld->GetContinent(dest_pos);
 
 	if (RobotAstar2::s_aiPathing.FindPath( RobotAstar2::PATH_TYPE_TRANSPORT,
 										   m_army,
@@ -312,7 +314,6 @@ bool Agent::FindPathToBoard(const uint32 & move_intersection, const MapPoint & d
 										   start_pos,
 										   dest_pos,
 										   check_dest,
-										   cont,
 										   static_cast<float>(trans_max_r),
 										   found_path,
 										   total_cost,
@@ -352,8 +353,6 @@ bool Agent::FindPath(const Army & army, const MapPoint & target_pos, const bool 
 		return true;
 	}
 
-	sint32 cont = g_theWorld->GetContinent(target_pos);
-
 	double trans_max_r = 0.4;
 	bool tmp_check_dest = check_dest;
 	RobotAstar2::PathType path_type;
@@ -381,7 +380,6 @@ bool Agent::FindPath(const Army & army, const MapPoint & target_pos, const bool 
 										   start_pos,
 										   target_pos,
 										   tmp_check_dest,
-										   cont,
 										   static_cast<float>(trans_max_r),
 										   found_path,
 										   total_cost ))
@@ -577,13 +575,6 @@ void Agent::Follow_Path(const Path & found_path, const sint32 & order_type)
 }
 #endif
 
-bool Agent::Can_Execute_Order(const sint32 & order_type) const
-{
-	const OrderRecord *order = g_theOrderDB->Get(order_type);
-
-	return m_army->TestOrderAll(order);
-}
-
 void Agent::Execute_Order(const sint32 & order_type, const MapPoint & target_pos)
 {
 	Assert(Get_Can_Be_Executed());
@@ -687,7 +678,7 @@ void Agent::Group_With( Agent_ptr second_army )
 
 	MapPoint dest_pos = m_goal->Get_Target_Pos();
 
-	sprintf(myString, "Grouping at (%d,%d) to %s (%d,%d)", pos.x, pos.y, goalString, dest_pos.x, dest_pos.y);
+	sprintf(myString, "Grouping at (%d,%d) to %s %s (%d,%d)", pos.x, pos.y, goalString, (g_theWorld->HasCity(m_goal->Get_Target_Pos()) ? g_theWorld->GetCity(m_goal->Get_Target_Pos()).GetName() : "field"), dest_pos.x, dest_pos.y);
 	g_graphicsOptions->AddTextToArmy(m_army, myString, 220, m_goal->Get_Goal_Type());
 
 	delete[] goalString;
@@ -777,7 +768,7 @@ sint32 Agent::DisbandObsoleteArmies()
 
 	if (count > 0)
 	{
-		AI_DPRINTF(k_DBG_SCHEDULER, m_army.GetOwner(), Get_Goal_Type(), -1, ("*** Disbanding Army:\n"));
+		AI_DPRINTF(k_DBG_SCHEDULER, m_army.GetOwner(), Get_Goal_Type(), -1, ("*** Disbanding Army: %s\n", m_army->GetName()));
 		Log_Debug_Info(k_DBG_SCHEDULER, Get_Goal());
 	}
 
@@ -794,6 +785,9 @@ sint32 Agent::DisbandObsoleteUnits()
 	if (!Get_Can_Be_Executed())
 		return 0;
 
+	if (IsNeededForGarrison())
+		return 0;
+
 	if (!m_army->IsObsolete())
 		return 0;
 
@@ -801,6 +795,13 @@ sint32 Agent::DisbandObsoleteUnits()
 		return 0;
 
 	if (m_army->CanSettle())
+		return 0;
+
+	// This doesn't seem to be needed
+//	if(Has_Any_Goal())
+//		return 0;
+
+	if(m_army->NumOrders() > 0)
 		return 0;
 
 	MapPoint    pos         = Get_Pos();
@@ -812,10 +813,18 @@ sint32 Agent::DisbandObsoleteUnits()
 	if ( (power > 0) && ((threat/(double)power) > 1.0))
 		return 0;
 
+	if(unit_count > 1)
+	{
+		AI_DPRINTF(k_DBG_SCHEDULER, m_army.GetOwner(), Get_Goal_Type(), -1, ("*** Ungroup before disbanding Army: %s\n", m_army->GetName()));
+		Ungroup_Order();
+		return 0;
+	}
+
 	Unit        city_unit   = g_theWorld->GetCity(pos);
 
 	if (city_unit.m_id == 0)
 	{
+		Unit nearestCity;
 		MapPoint nearest_city_pos;
 		sint32 nearest_distance = g_mp_size.x + g_mp_size.y;
 		sint32 distance;
@@ -828,9 +837,14 @@ sint32 Agent::DisbandObsoleteUnits()
 		for (sint16 i = 0; i < city_list->Num(); i++)
 		{
 			city_unit = city_list->Access(i);
+
+			if(g_theWorld->GetCell(city_unit.RetPos())->GetNumUnits() == k_MAX_ARMY_SIZE)
+				continue;
+
 			distance = MapPoint::GetSquaredDistance(city_unit.RetPos(), pos);
 			if (distance < nearest_distance)
 			{
+				nearestCity      = city_unit;
 				nearest_city_pos = city_unit.RetPos();
 				nearest_distance = distance;
 				found = true;
@@ -843,7 +857,9 @@ sint32 Agent::DisbandObsoleteUnits()
 			const OrderRecord *order_rec = CtpAi::GetDisbandArmyOrder();
 
 			PerformOrderHere(order_rec, &found_path);
-			g_graphicsOptions->AddTextToArmy(m_army, "DISBAND", 255, Get_Goal_Type());
+			MBCHAR * myString = new MBCHAR[255];
+			sprintf(myString, "Move to DISBAND @ %s", nearestCity.CD()->GetName());
+			g_graphicsOptions->AddTextToArmy(m_army, myString, 255, Get_Goal_Type());
 		}
 		return 0;
 	}
@@ -900,7 +916,7 @@ void Agent::WaitHere(const MapPoint & goal_pos)
 		MapPoint pos;
 		m_army->GetPos(pos);
 		MBCHAR * myString = new MBCHAR[255];
-		sprintf(myString, "Waiting GROUP @ (%d,%d) to GO (%d,%d)", pos.x, pos.y, goal_pos.x, goal_pos.y);
+		sprintf(myString, "Waiting GROUP @ (%d,%d) to %s GO (%d,%d)", pos.x, pos.y, (g_theWorld->HasCity(Get_Target_Pos()) ? g_theWorld->GetCity(Get_Target_Pos()).GetName() : "field"), goal_pos.x, goal_pos.y);
 		g_graphicsOptions->AddTextToArmy(m_army, myString, 220, Get_Goal_Type());
 		delete[] myString;
 	}

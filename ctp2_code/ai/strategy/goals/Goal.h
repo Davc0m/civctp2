@@ -102,6 +102,7 @@ public:
     bool Is_Goal_Undercommitted() const { return (!Is_Satisfied() && m_agents.size() > 0); };
 
     size_t Get_Agent_Count() const { return m_agents.size(); };
+    size_t Get_Agent_Count_All() const { return m_agents.size() + GetSubGoalCount(); };
 
     bool Is_Single_Agent() const { return m_agents.size() == 1; };
 
@@ -143,13 +144,15 @@ public:
 
     const Squad_Strength Get_Strength_Needed() const;
 
-    Utility Compute_Matching_With_Generic_Matches(Goal_ptr genric_goal, const bool update = true) { return Compute_Matching_Value(genric_goal->m_matches, update); };
-    Utility Compute_Matching_Value(Plan_List & matches, const bool update = true);
-    Utility Compute_Matching_Value(const bool update = true) { return Compute_Matching_Value(m_matches, update); };
-    Utility Recompute_Matching_Value(Plan_List & matches, const bool update = true, const bool show_strength = true);
-    Utility Recompute_Matching_Value(const bool update = true, const bool show_strength = true) { return Recompute_Matching_Value(m_matches, update, show_strength); };
+    Utility Compute_Matching_With_Generic_Matches(Goal_ptr generic_goal, const bool markGarrison = false) { return Compute_Matching_Value(generic_goal->m_matches, true, markGarrison); };
+    Utility Compute_Matching_Value(Plan_List & matches, const bool update = true, const bool markGarrison = false);
+    Utility Compute_Matching_Value(const bool update = true, const bool markGarrison = false) { return Compute_Matching_Value(m_matches, update, markGarrison); };
+    Utility Recompute_Matching_Value(Plan_List & matches, const bool update = true);
+    Utility Recompute_Matching_Value(const bool update = true) { return Recompute_Matching_Value(m_matches, update); };
     Utility Get_Matching_Value() const;
     void    Set_Matching_Value(Utility combinedUtility);
+    Utility Mark_For_Garrison(Plan_List & matches);
+    const char* GetTargetName() const;
 
     bool Add_Match(const Agent_ptr & agent, const bool update_match_value = true, const bool needsCargo = false);
     bool Add_Transport_Match(const Agent_ptr & agent) { return Add_Match(agent, true, true); };
@@ -170,9 +173,9 @@ public:
     void Set_Needs_Transporter(const bool needs_transporter);
     void Set_Needs_Transporter(Agent_ptr agent_ptr);
     sint16 Get_Transporters_Num() const { return m_current_attacking_strength.Get_Transport(); }
+    Squad_Strength GetCurrentAttackStrenght() const { return m_current_attacking_strength; }
 
     void Recompute_Current_Attacking_Strength();
-    Squad_Strength Compute_Current_Strength();
 
     void Sort_Matches_If_Necessary();
     void Set_Target_Pos(const MapPoint & pos);
@@ -215,14 +218,17 @@ public:
     bool IsCurrentlyUnavailable() const;
     bool IsTargetImmune() const;
     bool IsInvalidByDiplomacy() const;
+    void SetSubGoal(Goal* subGoal) { Assert(this->Get_Target_Pos() == subGoal->Get_Target_Pos());  m_sub_goal = subGoal; }
+    Goal* GetSubGoal() const { return m_sub_goal; }
+    size_t GetSubGoalCount() const { return m_sub_goal != nullptr ? m_sub_goal->m_agents.size() : 0; }
+
+    void SetBasics(sint8 playerId, GOAL_TYPE type, const Unit & city)    { m_playerId = playerId; m_goal_type = type; m_target_city      = city; m_target_army.m_id = 0;    m_target_pos.Set(0, 0); }
+    void SetBasics(sint8 playerId, GOAL_TYPE type, const Army & army)    { m_playerId = playerId; m_goal_type = type; m_target_city.m_id = 0;    m_target_army      = army; m_target_pos.Set(0, 0); }
+    void SetBasics(sint8 playerId, GOAL_TYPE type, const MapPoint & pos) { m_playerId = playerId; m_goal_type = type; m_target_city.m_id = 0;    m_target_army      = 0;    m_target_pos = pos;     }
 
 private:
 
     void Rollback_Agent(Agent_List::iterator & agent_iter);
-
-    bool FindPathToTask(Agent_ptr the_army,
-                        const MapPoint & goal_pos,
-                        Path & found_path);
 
     bool FollowPathToTask(Agent_ptr first_army,
                           Agent_ptr second_army,
@@ -268,6 +274,7 @@ private:
     Squad_Strength                    m_current_attacking_strength;
     Plan_List                         m_matches;
     Agent_List                        m_agents;
+    Goal*                             m_sub_goal;
     Utility                           m_raw_priority;
     Utility                           m_combinedUtility;
     MapPoint                          m_target_pos;

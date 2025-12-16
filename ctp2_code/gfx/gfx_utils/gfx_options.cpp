@@ -134,6 +134,11 @@ void GraphicsOptions::ResetArmyText(Army army)
 	}
 }
 
+void GraphicsOptions::CellTextOn()
+{
+	m_cellTextOn = true;
+}
+
 void GraphicsOptions::CellTextOn(PLAYER_INDEX debugCellPlayer)
 {
 	m_debugCellPlayer = debugCellPlayer;
@@ -164,6 +169,12 @@ bool GraphicsOptions::AddTextToCell(const MapPoint &pos, const char *text,
 	if (m_debugCellPlayer != PLAYER_UNASSIGNED && m_debugCellPlayer != playerId && playerId != PLAYER_UNASSIGNED)
 		return false;
 
+	return AddTextToCell(pos, text, colorMagnitude);
+}
+
+bool GraphicsOptions::AddTextToCell(const MapPoint &pos, const char *text,
+                                    const uint8 &colorMagnitude)
+{
 	CellText * cellText = GetCellText(pos);
 	if (cellText)
 	{

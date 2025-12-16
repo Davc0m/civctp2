@@ -80,25 +80,21 @@ AC_PATH_PROG(PERL,perl)
 AC_PATH_PROG(THUMBPDF,thumbpdf)
 AC_PATH_PROGS(VIEWPDF,acroread gpdf)
 
-for ac_remove_CFLAG in "-O1" "-O2" "-O3" ; do
-	CFLAGS=${CFLAGS//${ac_remove_CFLAG}/}
-	CPPFLAGS=${CPPFLAGS//${ac_remove_CFLAG}/}
-	CXXFLAGS=${CXXFLAGS//${ac_remove_CFLAG}/}
-done
-
 ctp2_code='$(top_srcdir)/ctp2_code'
 AC_SUBST(ctp2_code)
 
+## These are overwritten ##
 C_WARNINGS="-Wunknown-pragmas"
 CXX_WARNINGS="$C_WARNINGS -Wnon-virtual-dtor"
 COMMON_WARNINGS="-pedantic -Wchar-subscripts -Wcomment -Wconversion -Wendif-labels -Wformat -Wformat-y2k -Wformat-nonliteral -Wformat-security -Wimplicit -Winit-self -Wmissing-braces -Wpointer-arith -Wreturn-type -Wsign-compare -Wunknown-pragmas"
 C_WARNINGS="$COMMON_WARNINGS -Wmain -Wmissing-prototypes -Wnested-externs -Wnonnull -Wsequence-point -Wstrict-prototypes"
 CXX_WARNINGS="$COMMON_WARNINGS -Winvalid-offsetof"
+#########################
 
-C_WARNINGS="-Wall -Wno-unused-variable"
-CXX_WARNINGS="-Wall -Wno-unused-variable"
+C_WARNINGS="-Wall -Wno-unused-variable -Wno-parentheses -Wno-format-overflow -Wno-deprecated-declarations -Wno-comment -Wno-char-subscripts"
+CXX_WARNINGS="-Wall -Wno-unused-variable -Wno-parentheses -Wno-class-memaccess -Wno-format-overflow -Wno-deprecated-declarations -Wno-comment -Wno-char-subscripts"
 
-CFLAGS="$C_WARNINGS -fpermissive -fms-extensions -fmessage-length=0 $CFLAGS"
+CFLAGS="$C_WARNINGS -fms-extensions -fmessage-length=0 $CFLAGS"
 CXXFLAGS="$CXX_WARNINGS -fpermissive -fms-extensions -fmessage-length=0 -frtti -fexceptions $CXXFLAGS"
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
@@ -135,6 +131,9 @@ if test x$enable_debug = xyes  || test x$enable_debug = xfull; then
 	AC_DEFINE(_DEBUG_MEMORY,1,[Enable the leak reporter])# _DEBUG requires this
 fi
 AM_CONDITIONAL([DEBUG], [test "x$enable_debug" != "xno"])# for conditional block in Makefile.am
+AM_CONDITIONAL([LOGGING], [test "x$enable_looging" != "xno"])# for conditional block in Makefile.am
+AM_CONDITIONAL([PROFILE], [test "x$enable_profile" != "xno"])# for conditional block in Makefile.am
+
 
 if test 0 -eq 1; then
 	AC_DEFINE(CTP2_ENABLE_SLICDEBUG,1,[Enable slic debugging code])

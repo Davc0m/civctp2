@@ -292,7 +292,7 @@ extern sint32                   g_isTileImpPadOn;
 extern sint32                   g_isCheatModeOn;
 extern CityAstar                g_city_astar;
 #ifdef _DEBUG
-extern BOOL                     g_ai_revolt;
+BOOL                            g_ai_revolt = TRUE;
 #endif
 
 #define k_PLAYER_VERSION_MAJOR	0
@@ -1404,9 +1404,13 @@ Unit Player::CreateCity(
 
 	cityData->SetNeededGarrison(offensive_garrison + defensive_garrison + ranged_garrison);
 
-	const StrategyRecord::ForceMatch *  defense_force_match;
-	strategy.GetDefensive(defense_force_match);
-	double const threatFactor = defense_force_match->GetDefenseMatch();
+	const StrategyRecord::ForceMatch *  force_match;
+	if(strategy.HasGarrison())
+		strategy.GetGarrison(force_match);
+	else
+		strategy.GetDefensive(force_match);
+
+	double const threatFactor = force_match->GetDefenseMatch();
 
 	double threat = MapAnalysis::GetMapAnalysis().GetThreat(m_owner, pos) * threatFactor;
 	cityData->SetNeededGarrisonStrength(threat);
@@ -2819,8 +2823,6 @@ bool Player::GetSlaveCity(const MapPoint &pos, Unit &city)
 
 	max_eval = (max_eval > 0) ? std::min(max_eval, cityDistQueue.size()) : cityDistQueue.size();
 
-	CityDistQueue::iterator max_iter = cityDistQueue.begin() + max_eval;
-
 	std::sort(cityDistQueue.begin(), cityDistQueue.end(), std::less<CityDist>());
 
 	for(size_t t = 0; t < max_eval; ++t)
@@ -3424,7 +3426,8 @@ void Player::AcceptTradeBid(const Unit &fromCity, sint32 resource, const Unit &t
 										   fromCity.m_id, resource, toCity.m_id,
 										   price));
 	}
-	TradeRoute route = CreateTradeRoute(fromCity,
+
+	CreateTradeRoute(fromCity,
 					 ROUTE_TYPE_RESOURCE, resource,
 					 toCity,
 					 toCity.GetOwner(),
@@ -3741,7 +3744,7 @@ void Player::BuildResearchDialog(AdvanceType advance)
 
 		strcpy(messageStr, dstring);
 
-		sprintf(tempStr, "%#.3d", (sint32)advance);
+		sprintf(tempStr, "%.3d", (sint32)advance);
 
 		MBCHAR *p = strstr(messageStr, "000>");
 		if(p) {
@@ -5262,15 +5265,18 @@ void Player::GetSingularCivName(MBCHAR *s)
 
 void Player::DumpAllies(void)
 {
-	MBCHAR	s[_MAX_PATH];
+	MBCHAR s[_MAX_PATH];
+	MBCHAR d[_MAX_PATH];
 
 	DPRINTF(k_DBG_INFO, ("Dumping alliances for Player #%d", m_owner)) ;
 	s[0] = 0;
 	for(sint32 i=0; i<k_MAX_PLAYERS; i++)
 	{
 		if ((mask_alliance & (0x01<<i)) && (i != m_owner))
-			sprintf(s, "%s P%d, ", s, i) ;
-
+		{
+			sprintf(d, " P%d, ", i);
+			strcat(s, d);
+		}
 	}
 
 	if (strlen(s))
@@ -6647,7 +6653,7 @@ void Player::DisplayAdvances()
 
 	AdvanceType	adv ;
 
-	sprintf(s, "Advances, Player %ld:", m_owner);
+	sprintf(s, "Advances, Player %d:", m_owner);
 	g_debugWindow->AddText(s);
 
 		for (adv=0; adv<m_advances->GetNum(); adv++)
@@ -7788,6 +7794,14 @@ void Player::RegisterAttack(PLAYER_INDEX against)
 #endif
 }
 
+void Player::ContactKilled(PLAYER_INDEX with)
+{
+	if(with == m_owner)
+		return;
+
+	m_contactedPlayers &= ~(1 << with);
+}
+
 void Player::ContactMade(PLAYER_INDEX with)
 {
 	if(with == m_owner)
@@ -7807,6 +7821,8 @@ void Player::ContactMade(PLAYER_INDEX with)
 					Diplomat::GetDiplomat(m_owner).SendGreeting(with);
 					Diplomat::GetDiplomat(with).RecomputeRegard();
 					Diplomat::GetDiplomat(m_owner).RecomputeRegard();
+					Diplomat::GetDiplomat(with).UpdateDesireWarWith(m_owner);
+					Diplomat::GetDiplomat(m_owner).UpdateDesireWarWith(with);
 				}
 			}
 		}
@@ -8132,7 +8148,6 @@ void Player::GiveArmyCommand(Army &army,
 	if(army.GetOwner() != m_owner)
 		return;
 
-	Unit aUnit = army.Access(0);
 	MapPoint apos;
 	army.GetPos(apos);
 	Unit aCity;
@@ -8679,6 +8694,7 @@ bool Player::HasPeaceTreatyWith(PLAYER_INDEX otherPlayer) const
 	    &&  g_player[otherPlayer] != NULL
 	    && AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_PEACE);
 }
+
 //True if player has at least one of trade/military/research/pollution pact with other player
 bool Player::HasAnyPactWith(PLAYER_INDEX otherPlayer) const
 {
@@ -8694,7 +8710,6 @@ bool Player::HasAnyPactWith(PLAYER_INDEX otherPlayer) const
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_RESEARCH_PACT)
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_MILITARY_PACT)
 		|| AgreementMatrix::s_agreements.HasAgreement(m_owner, otherPlayer, PROPOSAL_TREATY_POLLUTION_PACT));
-
 }
 
 void player_ActivateSpaceButton(sint32 owner)
@@ -8709,7 +8724,6 @@ void player_ActivateSpaceButton(sint32 owner)
 
 void Player::ResetVision()
 {
-
 	m_vision->SetTheWholeWorldUnseen();
 	sint32 j;
 

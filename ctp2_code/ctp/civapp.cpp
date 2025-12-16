@@ -1270,12 +1270,9 @@ sint32 CivApp::InitializeApp(HINSTANCE hInstance, int iCmdShow)
 
 	Splash::Initialize();
 
-	g_theProfileDB = new ProfileDB;
-	if (!g_theProfileDB->Init(FALSE))
-	{
-		c3errors_FatalDialog("CivApp", "Unable to init the ProfileDB.");
-	}
-
+	// Initializes the civ paths theProfileDB and theLanguageDB
+	// These must be initialzed in this order not to break anything
+	// If you need this initilized earlier, just call this earlier
 	CivPaths_InitCivPaths();
 
 	g_logCrashes = g_theProfileDB->GetEnableLogs();
@@ -2265,7 +2262,14 @@ void CivApp::CleanupGame(bool keepScenInfo)
 		g_civPaths->ClearCurScenarioPackPath();
 		memset(g_scenarioName, '\0', k_SCENARIO_NAME_MAX);
 		CleanupAppDB();
+		g_c3ui->BlackScreen(); // Clears primary
+		g_c3ui->ClearSecondary();
 		InitializeAppDB();
+	}
+	else
+	{
+		g_c3ui->BlackScreen(); // Clears primary
+		g_c3ui->ClearSecondary();
 	}
 
 #if defined(_DEBUG) && defined(_MEMORYLOGGING) && defined(_DEBUG_MEMORY)
@@ -2277,8 +2281,6 @@ void CivApp::CleanupGame(bool keepScenInfo)
 	g_launchIntoCheatMode   = FALSE;
 	g_god                   = FALSE;
 	g_isCheatModeOn         = FALSE;
-
-	g_c3ui->BlackScreen();
 }
 
 void CivApp::StartMessageSystem()
@@ -2335,7 +2337,7 @@ sint32 CivApp::ProcessUI(const uint32 target_milliseconds, uint32 &used_millisec
 {
 	uint32          start_time_ms   = Os::GetTicks();
 	uint32          curTicks        = Os::GetTicks();
-	static uint32	lastTicks       = curTicks;
+//	static uint32	lastTicks       = curTicks;
 
 	if (g_c3ui->TheMouse()) {
 		if (g_c3ui->TheMouse()->IsSuspended() && IsInBackground())
@@ -2377,7 +2379,7 @@ sint32 CivApp::ProcessUI(const uint32 target_milliseconds, uint32 &used_millisec
 
 			}
 
-			lastTicks = curTicks;
+//			lastTicks = curTicks;
 		}
 	}
 
@@ -2714,7 +2716,7 @@ sint32 CivApp::RestartGameSameMap(void)
 
 	if (g_theProfileDB->IsScenario())
 	{
-		spnewgamescreen_scenarioExitCallback(NULL, AUI_BUTTON_ACTION_EXECUTE, 0, NULL);
+		spnewgamescreen_scenarioExitCallback(NULL, AUI_BUTTON_ACTION_EXECUTE, 0, nullptr);
 		return 0;
 	}
 	else

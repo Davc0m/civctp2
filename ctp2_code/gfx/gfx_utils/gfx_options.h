@@ -85,11 +85,13 @@ public:
 	void ArmyNameOff(void);
 
 	bool IsCellTextOn(void) const { return m_cellTextOn; }
+	void CellTextOn();
 	void CellTextOn(PLAYER_INDEX debugCellPlayer);
 	void CellTextOff(void);
 
 	CellText * GetCellText(MapPoint const & pos);
 	bool AddTextToCell(const MapPoint &pos, const char * text, const uint8 & colorMagnitude, const PLAYER_INDEX playerId);
+	bool AddTextToCell(const MapPoint &pos, const char * text, const uint8 & colorMagnitude);
 	void ResetCellText(const MapPoint &pos);
 	void ResetAllCellTexts();
 

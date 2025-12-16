@@ -20,7 +20,7 @@
 #
 # - Minor build order modifications.
 # - Moved BUILDING_BUILD_LIST_OFFENSE to the top of the BUILD_LIST_SEQUENCE_OFFENSE
-#   so that the AI builds city walls first, that will also help the to
+#   so that the AI builds city walls first, that will also help the AI to
 #   protect itself from slave raids. (06-Sep-2008 Martin Gühmann)
 # - Added build list sequences for small cities and for cities at their
 #   maximum size. (20-Aug-2009 Martin Gühmann)
@@ -137,8 +137,8 @@ BUILD_LIST_SEQUENCE_DEFENSE {
   BuildListElement { GarrisonUnitBuildList }
   BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_DEFENSE }
   BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_ENDGAME }
-  BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_GROWTH }
   BuildListElement { AllUnitBuildList }
+  BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_GROWTH }
   BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_PRODUCTION }
   BuildListElement { Freight }
   BuildListElement { BuildingBuildList BUILDING_BUILD_LIST_SCIENCE }

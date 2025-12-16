@@ -212,6 +212,8 @@ void CtpAi::AddGoalsForCitiesAndArmies(const PLAYER_INDEX player)
 	Scheduler & scheduler = Scheduler::GetScheduler(player);
 	const StrategyRecord &strategy = Diplomat::GetDiplomat(player).GetCurrentStrategy();
 
+	Goal newGoal;
+
 	for(GOAL_TYPE goal_type = 0; goal_type < g_theGoalDB->NumRecords(); goal_type++)
 	{
 		sint16 max_eval = 0;
@@ -263,12 +265,8 @@ void CtpAi::AddGoalsForCitiesAndArmies(const PLAYER_INDEX player)
 					Unit city = player_ptr->m_all_cities->Access(i);
 					Assert(city.IsValid() && city->GetCityData());
 
-					Goal * goal_ptr = new Goal();
-					goal_ptr->Set_Type(goal_type);
-					goal_ptr->Set_Player_Index(player);
-					goal_ptr->Set_Target_City(city);
-
-					scheduler.Add_New_Goal(goal_ptr);
+					newGoal.SetBasics(player, goal_type, city);
+					scheduler.Add_New_Goal(newGoal);
 				}
 			}
 
@@ -287,12 +285,8 @@ void CtpAi::AddGoalsForCitiesAndArmies(const PLAYER_INDEX player)
 					Army army = player_ptr->m_all_armies->Access(i);
 					Assert(army.IsValid() && army.AccessData());
 
-					Goal_ptr     goal_ptr = new Goal();
-					goal_ptr->Set_Type(goal_type);
-					goal_ptr->Set_Player_Index(player);
-					goal_ptr->Set_Target_Army(army);
-
-					scheduler.Add_New_Goal(goal_ptr);
+					newGoal.SetBasics(player, goal_type, army);
+					scheduler.Add_New_Goal(newGoal);
 				}
 			}
 		}
@@ -555,7 +549,6 @@ STDEHANDLER(CtpAi_BeginSchedulerEvent)
 
 	Scheduler & scheduler = Scheduler::GetScheduler(playerId);
 	scheduler.Process_Agent_Changes();
-	scheduler.Assign_Garrison();
 
 	scheduler.Reset_Agent_Execution();
 
@@ -566,7 +559,7 @@ STDEHANDLER(CtpAi_BeginSchedulerEvent)
 	DPRINTF(k_DBG_AI, ("// PROCESS GOAL CHANGES -- Turn %d\n", round));
 	DPRINTF(k_DBG_AI, ("//                         Player %d\n", playerId));
 
-	scheduler.Process_Goal_Changes();
+	scheduler.Process_Goal_Changes(); // Computes raw and combined priorities
 	DPRINTF(k_DBG_AI, ("//  elapsed time = %d ms\n", (GetTickCount() - t1)));
 
 	t1 = GetTickCount();
@@ -727,6 +720,8 @@ STDEHANDLER(CtpAi_ImprovementComplete) // Not regenerated after reload
 	if(!args->GetInt(0, type))
 		return GEV_HD_Continue;
 
+	Goal newGoal;
+
 	// @ToDo: Move it to its own function that is called in CtpAi::BeginTurn with all the other goal adding stuff
 	// @ToDo: Get efficient method to determine endgame positions. Otherwise scan the whole map. But probably that is still cheap compared to adding the goals.
 	if (GaiaController::sm_endgameImprovements & ((uint64)0x1 << (uint64)type))
@@ -753,12 +748,8 @@ STDEHANDLER(CtpAi_ImprovementComplete) // Not regenerated after reload
 				if (playerId == owner && !goal_rec->GetTargetOwnerSelf())
 					continue;
 
-				Goal_ptr goal_ptr = new Goal();
-				goal_ptr->Set_Player_Index( playerId );
-				goal_ptr->Set_Type(static_cast<GOAL_TYPE>(goal_type));
-				goal_ptr->Set_Target_Pos( pos );
-
-				scheduler.Add_New_Goal( goal_ptr );
+				newGoal.SetBasics(playerId, goal_type, pos);
+				scheduler.Add_New_Goal(newGoal);
 			}
 		}
 	}
@@ -979,14 +970,15 @@ void CtpAi::Load(CivArchive & archive)
 {
 	Initialize(false);
 
+	// Analyse the map first, we need that to compute desire war in Diplomat::Load from Diplomat::LoadAll
+	SPLASH_STRING("Analyse Map...");
+	MapAnalysis::GetMapAnalysis().BeginTurn();
+
 	SPLASH_STRING("Load Diplomacy...");
 	Diplomat::LoadAll(archive);
 
 	SPLASH_STRING("Compute good values...");
 	g_theWorld->ComputeGoodsValues();
-
-	SPLASH_STRING("Analyse Map...");
-	MapAnalysis::GetMapAnalysis().BeginTurn();
 
 	SPLASH_STRING("Assign goals...");
 	for (PLAYER_INDEX playerId = 0; playerId < s_maxPlayers; playerId++)
@@ -1056,7 +1048,11 @@ void CtpAi::RemovePlayer(const PLAYER_INDEX deadPlayerId)
 	for (PLAYER_INDEX player = 0; player < s_maxPlayers; ++player)
 	{
 		if (g_player[player])
+		{
 			Diplomat::GetDiplomat(player).InitForeigner(deadPlayerId);
+			g_player[player]->ContactKilled(deadPlayerId);
+			g_player[player]->CloseEmbassy(deadPlayerId);
+		}
 	}
 
 	AgreementMatrix::s_agreements.ClearAgreementsInvolving(deadPlayerId);
@@ -1090,6 +1086,15 @@ void CtpAi::AddPlayer(const PLAYER_INDEX newPlayerId)
 	for (PLAYER_INDEX player = 0; player < s_maxPlayers; ++player)
 	{
 		Diplomat::GetDiplomat(player).InitForeigner(newPlayerId);
+		if (g_player[player])
+		{
+			// Reset conact made as this might not have been
+			// handled in RemovePlayer from save games of
+			// previous versions
+			// Also true for embassies
+			g_player[player]->ContactKilled(newPlayerId);
+			g_player[player]->CloseEmbassy(newPlayerId);
+		}
 	}
 }
 
@@ -1279,7 +1284,7 @@ void CtpAi::BeginTurn(const PLAYER_INDEX player)
 	DPRINTF(k_DBG_AI, ("//                                                   Player %d\n", player));
 
 	AddGoalsForCitiesAndArmies(player);
-
+	Scheduler::GetScheduler(player).Associate_Goals_With_Sub_Goals();
 	DPRINTF(k_DBG_AI, ("//  elapsed time = %d ms\n", (GetTickCount() - t1)));
 
 	if (player == 0 && player_ptr->IsRobot())
@@ -1683,6 +1688,8 @@ void CtpAi::Resize()
 
 void CtpAi::AddExploreTargets(const PLAYER_INDEX playerId)
 {
+	Goal newGoal;
+
 	Scheduler & scheduler = Scheduler::GetScheduler(playerId);
 	const StrategyRecord & strategy =
 		Diplomat::GetDiplomat(playerId).GetCurrentStrategy();
@@ -1725,12 +1732,8 @@ void CtpAi::AddExploreTargets(const PLAYER_INDEX playerId)
 				// After completion of one exploration goal a human player
 				// goes to the next cell on the map,
 				// in most cases a neighbour tile.
-				Goal * goal_ptr = new Goal();
-				goal_ptr->Set_Type( goal_type );
-				goal_ptr->Set_Player_Index( playerId );
-				goal_ptr->Set_Target_Pos( pos );
-
-				scheduler.Add_New_Goal( goal_ptr );
+				newGoal.SetBasics(playerId, goal_type, pos);
+				scheduler.Add_New_Goal(newGoal);
 			}
 		}
 	}
@@ -1747,6 +1750,7 @@ void CtpAi::AddSettleTargets(const PLAYER_INDEX playerId)
 	if (player_ptr == NULL)
 		return;
 
+	Goal newGoal;
 	SettleMap::SettleTargetList targets;
 	SettleMap::s_settleMap.GetSettleTargets(playerId, targets);
 
@@ -1819,12 +1823,8 @@ void CtpAi::AddSettleTargets(const PLAYER_INDEX playerId)
 				 (g_theWorld->IsWater(settle_target.m_pos)) &&
 				 (g_theGoalDB->Get(goal_type)->GetTargetTypeSettleSea()))
 			{
-				Goal_ptr goal_ptr = new Goal();
-				goal_ptr->Set_Type( goal_type );
-				goal_ptr->Set_Player_Index( playerId );
-				goal_ptr->Set_Target_Pos( settle_target.m_pos );
-
-				scheduler.Add_New_Goal( goal_ptr );
+				newGoal.SetBasics(playerId, goal_type, settle_target.m_pos);
+				scheduler.Add_New_Goal(newGoal);
 
 				uint8   magnitude = (uint8) (((max_desired_goals - desired_goals) * 255) / max_desired_goals);
 				char buf[10];
@@ -1845,6 +1845,8 @@ void CtpAi::AddMiscMapTargets(const PLAYER_INDEX playerId)
 
 	Player *player_ptr = g_player[playerId];
 	Assert(player_ptr);
+
+	Goal newGoal;
 
 	for (sint32 goal_element = 0; goal_element < strategy.GetNumGoalElement(); goal_element++)
 	{
@@ -1874,22 +1876,14 @@ void CtpAi::AddMiscMapTargets(const PLAYER_INDEX playerId)
 				if (cell->GetIsChokePoint() &&
 					g_theGoalDB->Get(goal_type)->GetTargetTypeChokePoint())
 				{
-					Goal * goal_ptr = new Goal();
-					goal_ptr->Set_Type( goal_type );
-					goal_ptr->Set_Player_Index( playerId );
-					goal_ptr->Set_Target_Pos( pos );
-
-					scheduler.Add_New_Goal( goal_ptr );
+					newGoal.SetBasics(playerId, goal_type, pos);
+					scheduler.Add_New_Goal(newGoal);
 				}
 
 				if (cell->GetGoodyHut())
 				{
-					Goal * goal_ptr = new Goal();
-					goal_ptr->Set_Type( goal_type );
-					goal_ptr->Set_Player_Index( playerId );
-					goal_ptr->Set_Target_Pos( pos );
-
-					scheduler.Add_New_Goal( goal_ptr );
+					newGoal.SetBasics(playerId, goal_type, pos);
+					scheduler.Add_New_Goal(newGoal);
 				}
 			}
 		}
@@ -1912,9 +1906,13 @@ void CtpAi::ComputeCityGarrisons(const PLAYER_INDEX playerId )
 	strategy.GetRangedGarrisonCount(ranged_garrison);
 	sint32 min_garrison = offensive_garrison + defensive_garrison + ranged_garrison;
 
-	const StrategyRecord::ForceMatch *  defense_force_match;
-	strategy.GetDefensive(defense_force_match);
-	double const threatFactor = defense_force_match->GetDefenseMatch();
+	const StrategyRecord::ForceMatch *  force_match;
+	if(strategy.HasGarrison())
+		strategy.GetGarrison(force_match);
+	else
+		strategy.GetDefensive(force_match);
+
+	double const threatFactor = force_match->GetDefenseMatch();
 
 	sint32 num_cities = player_ptr->m_all_cities->Num();
 	for (sint32 cityIndex = 0; cityIndex < num_cities; ++cityIndex)
@@ -2098,7 +2096,6 @@ void CtpAi::RefuelAirplane(const Army & army)
 		start_pos,
 		refueling_pos,
 		true,
-		g_theWorld->GetContinent(refueling_pos),
 		trans_max_r,
 		new_path,
 		total_cost))

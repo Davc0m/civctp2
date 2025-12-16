@@ -158,7 +158,9 @@ public:
 
 	void Match_Resources(const bool move_armies);
 
-	void Add_New_Goal(const Goal_ptr & new_goal);
+	void Add_New_Goal(const Goal & new_goal);
+
+	void Scheduler::Associate_Goals_With_Sub_Goals();
 
 	void Add_New_Agent(const Agent_ptr & new_agent);
 	Agent_List::iterator Add_Agent(const Agent_ptr & agent);
@@ -179,7 +181,8 @@ public:
 
 	void DisbandObsoleteArmies(const sint16 max_count);
 
-	bool Prioritize_Goals();
+	void Raw_Prioritize_Goals();
+	void Prioritize_Goals();
 
 	bool Prune_Goals();
 

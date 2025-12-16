@@ -166,6 +166,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <libgen.h>         // dirname
+#include <signal.h>
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1153,36 +1154,35 @@ void ParseCommandLine(PSTR szCmdLine)
 #if defined(_MSC_VER)
 static LONG _cdecl main_CivExceptionHandler(LPEXCEPTION_POINTERS pException)
 {
-#if defined(_DEBUG) || defined(USE_LOGGING)
-
 	MBCHAR * s;
 
 	switch (pException->ExceptionRecord->ExceptionCode)
 	{
-	case EXCEPTION_ACCESS_VIOLATION:        s = "Access Violation";                break;
-	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:   s = "Array Bounds Exceeded";           break;
-	case EXCEPTION_BREAKPOINT:              s = "Breakpoint";                      break;
-	case EXCEPTION_DATATYPE_MISALIGNMENT:   s = "Datatype Misalignment";           break;
-	case EXCEPTION_FLT_DENORMAL_OPERAND:    s = "Floating Point Denormal Operand"; break;
-	case EXCEPTION_FLT_DIVIDE_BY_ZERO:      s = "Floating Point Divide by Zero";   break;
-	case EXCEPTION_FLT_INEXACT_RESULT:      s = "Floating Point Inexact Result";   break;
-	case EXCEPTION_FLT_INVALID_OPERATION:   s = "Floating Point Invalid Operation";break;
-	case EXCEPTION_FLT_OVERFLOW:            s = "Floating Point Overflow";         break;
-	case EXCEPTION_FLT_STACK_CHECK:         s = "Floating Point Stack Check";      break;
-	case EXCEPTION_FLT_UNDERFLOW:           s = "Floating Point Underflow";        break;
-	case EXCEPTION_GUARD_PAGE:              s = "Guard Page";                      break;
-	case EXCEPTION_ILLEGAL_INSTRUCTION:     s = "Illegal Instruction";             break;
-	case EXCEPTION_IN_PAGE_ERROR:           s = "In-page Error";                   break;
-	case EXCEPTION_INT_DIVIDE_BY_ZERO:      s = "Integer Divide By Zero";          break;
-	case EXCEPTION_INT_OVERFLOW:            s = "Integer Overflow";                break;
-	case EXCEPTION_INVALID_DISPOSITION:     s = "Invalid Disposition";             break;
-	case EXCEPTION_NONCONTINUABLE_EXCEPTION:s = "Non-Continuable Exception";       break;
-	case EXCEPTION_PRIV_INSTRUCTION:        s = "Privileged Instruction";          break;
-	case EXCEPTION_SINGLE_STEP:             s = "Single Step";                     break;
-	case EXCEPTION_STACK_OVERFLOW:          s = "Stack Overflow";                  break;
-	default:                                s = "Unknown";                         break;
+		case EXCEPTION_ACCESS_VIOLATION:        s = "Access Violation";                break;
+		case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:   s = "Array Bounds Exceeded";           break;
+		case EXCEPTION_BREAKPOINT:              s = "Breakpoint";                      break;
+		case EXCEPTION_DATATYPE_MISALIGNMENT:   s = "Datatype Misalignment";           break;
+		case EXCEPTION_FLT_DENORMAL_OPERAND:    s = "Floating Point Denormal Operand"; break;
+		case EXCEPTION_FLT_DIVIDE_BY_ZERO:      s = "Floating Point Divide by Zero";   break;
+		case EXCEPTION_FLT_INEXACT_RESULT:      s = "Floating Point Inexact Result";   break;
+		case EXCEPTION_FLT_INVALID_OPERATION:   s = "Floating Point Invalid Operation";break;
+		case EXCEPTION_FLT_OVERFLOW:            s = "Floating Point Overflow";         break;
+		case EXCEPTION_FLT_STACK_CHECK:         s = "Floating Point Stack Check";      break;
+		case EXCEPTION_FLT_UNDERFLOW:           s = "Floating Point Underflow";        break;
+		case EXCEPTION_GUARD_PAGE:              s = "Guard Page";                      break;
+		case EXCEPTION_ILLEGAL_INSTRUCTION:     s = "Illegal Instruction";             break;
+		case EXCEPTION_IN_PAGE_ERROR:           s = "In-page Error";                   break;
+		case EXCEPTION_INT_DIVIDE_BY_ZERO:      s = "Integer Divide By Zero";          break;
+		case EXCEPTION_INT_OVERFLOW:            s = "Integer Overflow";                break;
+		case EXCEPTION_INVALID_DISPOSITION:     s = "Invalid Disposition";             break;
+		case EXCEPTION_NONCONTINUABLE_EXCEPTION:s = "Non-Continuable Exception";       break;
+		case EXCEPTION_PRIV_INSTRUCTION:        s = "Privileged Instruction";          break;
+		case EXCEPTION_SINGLE_STEP:             s = "Single Step";                     break;
+		case EXCEPTION_STACK_OVERFLOW:          s = "Stack Overflow";                  break;
+		default:                                s = "Unknown";                         break;
 	}
 
+#if defined(_DEBUG) || defined(USE_LOGGING)
 	DPRINTF(k_DBG_FIX, ("Exception: '%s' thrown.\n", s));
 	s = c3debug_ExceptionStackTrace(pException);
 	DPRINTF(k_DBG_FIX, ("Exception Stack Trace:\n%s\n", s));
@@ -1191,7 +1191,7 @@ static LONG _cdecl main_CivExceptionHandler(LPEXCEPTION_POINTERS pException)
 
 #else // _DEBUG
 
-#ifdef _BFR_
+#if defined(_BFR_)
 	if (g_logCrashes)
 #endif
 	{
@@ -1201,7 +1201,18 @@ static LONG _cdecl main_CivExceptionHandler(LPEXCEPTION_POINTERS pException)
 
 		if (crashLog)
 		{
-			fprintf(crashLog, "Version %s\n", Os::GetExeVersion().c_str());
+#if defined(_X86_)
+			fprintf(crashLog, "Windows x86 Version %s\n", Os::GetExeVersion().c_str());
+#elif defined(_AMD64_)
+			fprintf(crashLog, "Windows x64 Version %s\n", Os::GetExeVersion().c_str());
+#elif defined(_ARM_)
+			fprintf(crashLog, "Windows ARM32 Version %s\n", Os::GetExeVersion().c_str());
+#elif defined(_ARM64_)
+			fprintf(crashLog, "Windows ARM64 Version %s\n", Os::GetExeVersion().c_str());
+#else
+#error Version string not defined for this processor architecture
+#endif
+			fprintf(crashLog, "Exception: '%s' thrown.\n", s);
 			fprintf(crashLog, "%s\n", c3debug_ExceptionStackTrace(pException));
 			fclose(crashLog);
 		}
@@ -1210,6 +1221,58 @@ static LONG _cdecl main_CivExceptionHandler(LPEXCEPTION_POINTERS pException)
 #endif // _DEBUG
 
 	return EXCEPTION_EXECUTE_HANDLER;
+}
+#else
+static void main_CivExceptionHandler(int sig)
+{
+	MBCHAR * s;
+
+	switch (sig)
+	{
+		case SIGABRT: s = "Abnormal Terminination (SIGABRT)";        break;
+		case SIGFPE:  s = "Floating Point Exception (SIGFPE)";       break;
+		case SIGILL:  s = "Illigal Instruction (SIGILL)";            break;
+		case SIGINT:  s = "Interrupt Signal Sent (Ctrl+C) (SIGINT)"; break;
+		case SIGSEGV: s = "Segmentation Fault (SIGSEGV)";            break;
+		case SIGTERM: s = "Termination Requested (SIGTERM)";         break;
+		case SIGQUIT: s = "Quit Signal (SIGQUIT)";                   break;
+		default:      s = "Unknown/Unspecified";                     break;
+	}
+
+#if defined(_DEBUG) || defined(USE_LOGGING)
+	// Print to file and stderr
+	fprintf(stderr, "Linux Version %s\n", Os::GetExeVersion().c_str());
+	fprintf(stderr, "Signal '%s' is send.\n", s);
+	DPRINTF(k_DBG_FIX, ("Signal '%s' is send.\n", s));
+	s = c3debug_StackTrace();
+	DPRINTF(k_DBG_FIX, ("Exception Stack Trace:\n%s\n", s));
+	fprintf(stderr, "%s\n", c3debug_StackTrace());
+
+#else // _DEBUG
+
+#if defined(_BFR_)
+	if (g_logCrashes)
+#endif
+	{
+		FILE * crashLog = fopen("logs" FILE_SEP "crash.txt", "w");
+		if (!crashLog)
+			crashLog = fopen("crash.txt", "w");
+
+		// Print to file and stderr
+		if (crashLog)
+		{
+			fprintf(crashLog, "Linux Version %s\n", Os::GetExeVersion().c_str());
+			fprintf(crashLog, "Signal '%s' is send.\n", s);
+			fprintf(crashLog, "%s\n", c3debug_StackTrace());
+			fclose(crashLog);
+		}
+		fprintf(stderr, "Linux Version %s\n", Os::GetExeVersion().c_str());
+		fprintf(stderr, "Signal '%s' is send.\n", s);
+		fprintf(stderr, "%s\n", c3debug_StackTrace());
+	}
+
+#endif // _DEBUG
+	exit(sig);
 }
 #endif // _MSC_VER
 
@@ -1451,11 +1514,19 @@ void main_DisplayPatchDisclaimer()
 #if defined(__GNUC__)
 int CivMain
 (
-	int		    iCmdShow,   // argc
+	int         iCmdShow,    // argc
 	char **	    pSzCmdLine   // argv
 )
 {
-// FIXME: Remove unneeded arguments.
+	signal(SIGABRT, main_CivExceptionHandler);
+	signal(SIGFPE,  main_CivExceptionHandler);
+	signal(SIGILL,  main_CivExceptionHandler);
+	signal(SIGINT,  main_CivExceptionHandler);
+	signal(SIGSEGV, main_CivExceptionHandler);
+	signal(SIGTERM, main_CivExceptionHandler);
+	signal(SIGQUIT, main_CivExceptionHandler);
+
+	// FIXME: Remove unneeded arguments.
 	HINSTANCE hInstance = NULL;
 #else	// __GNUC__
 int WINAPI CivMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow)
@@ -1567,7 +1638,7 @@ int WINAPI CivMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 			if (g_civScenarios->ScenarioHasSavedGame(scen))
 			{
-				spnewgamescreen_scenarioExitCallback(NULL, 0, 0, NULL);
+				spnewgamescreen_scenarioExitCallback(NULL, 0, 0, nullptr);
 			}
 			else
 			{
@@ -1599,7 +1670,7 @@ int WINAPI CivMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 
 			if (g_civScenarios->ScenarioHasSavedGame(scen))
 			{
-				spnewgamescreen_scenarioExitCallback(NULL, 0, 0, NULL);
+				spnewgamescreen_scenarioExitCallback(NULL, 0, 0, nullptr);
 			}
 			else
 			{

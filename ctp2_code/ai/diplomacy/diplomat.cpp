@@ -41,15 +41,15 @@
 // - Prevented crash on incorrect input (personality typo).
 // - Improved CleanupAll.
 // - Some agreements have limited duration, PFT 05 MAR 05
-// - Replaced old civilisation database by new civilisation database. (Aug 20th 2005 Martin Gühmann)
-// - Initialized local variables. (Sep 9th 2005 Martin Gühmann)
-// - Standardized code (May 21st 2006 Martin Gühmann)
+// - Replaced old civilisation database by new civilisation database. (Aug 20th 2005 Martin GÃ¼hmann)
+// - Initialized local variables. (Sep 9th 2005 Martin GÃ¼hmann)
+// - Standardized code (May 21st 2006 Martin GÃ¼hmann)
 // - Made limited duration optional.
-// - Added war over message. (Feb 4th 2007 Martin Gühmann)
-// - Added HotSeat and PBEM human-human diplomacy support. (17-Oct-2007 Martin Gühmann)
+// - Added war over message. (Feb 4th 2007 Martin GÃ¼hmann)
+// - Added HotSeat and PBEM human-human diplomacy support. (17-Oct-2007 Martin GÃ¼hmann)
 // - Seperated the NewProposal event from the Response event so that the
-//   NewProposal event can be called from slic witout any problems. (17-Oct-2007 Martin Gühmann)
-// - The player's default strategy is restored after save reloading. (13-Jun-2008 Martin Gühmann)
+//   NewProposal event can be called from slic witout any problems. (17-Oct-2007 Martin GÃ¼hmann)
+// - The player's default strategy is restored after save reloading. (13-Jun-2008 Martin GÃ¼hmann)
 //
 //----------------------------------------------------------------------------
 
@@ -211,7 +211,7 @@ Diplomat & Diplomat::GetDiplomat(const size_t & playerId)
 {
 	Assert(playerId >= 0);
 	Assert(playerId < s_theDiplomats.size());
-	Assert(playerId == s_theDiplomats[playerId].GetPlayerId());
+	Assert(playerId == static_cast<size_t>(s_theDiplomats[playerId].GetPlayerId()));
 
 	return s_theDiplomats[playerId];
 }
@@ -219,9 +219,9 @@ Diplomat & Diplomat::GetDiplomat(const size_t & playerId)
 bool Diplomat::HasDiplomat(const size_t & playerId)
 {
 	return (playerId >= 0
-	&&      static_cast<size_t>(playerId) < s_theDiplomats.size()
+	&&      playerId < s_theDiplomats.size()
 	&&      g_player[playerId] != NULL
-	&&      playerId == s_theDiplomats[playerId].GetPlayerId());
+	&&      playerId == static_cast<size_t>(s_theDiplomats[playerId].GetPlayerId()));
 }
 
 void Diplomat::ResizeAll(const size_t & newMaxPlayers)
@@ -315,9 +315,9 @@ void Diplomat::AddDiplomacyArgToSlicContext(SlicContext & sc, const DiplomacyArg
 {
 	if (dip_arg.playerId != -1)
 		sc.AddPlayer(dip_arg.playerId);
-	else if (dip_arg.cityId != -1)
+	else if (dip_arg.cityId != 0)
 		sc.AddCity(dip_arg.cityId);
-	else if (dip_arg.armyId != -1)
+	else if (dip_arg.armyId != 0)
 		sc.AddArmy(dip_arg.armyId);
 	else if (dip_arg.agreementId != -1)
 		sc.AddArmy(dip_arg.armyId);
@@ -944,6 +944,10 @@ void Diplomat::BeginTurn()
 		NextDiplomaticState(foreignerId);
 	}
 
+	// Already done in UpdateAttributes, but RecomputeRegard changes the result
+	// Unclear whether there are some other things that change the result
+	// So just recompute this before we need it in ComputeIncursionPermission
+	ComputeAllDesireWarWith();
 	ComputeIncursionPermission();
 
 	ExecutePersistantAgreements();
@@ -1003,7 +1007,7 @@ void Diplomat::LogViolationEvent(const PLAYER_INDEX foreignerId, const PROPOSAL_
 	StringId strId;
 	REGARD_EVENT_TYPE regard_event_type = REGARD_EVENT_DIPLOMACY;
 	bool act_of_war = false;
-	char * trust_message = NULL;
+	const char * trust_message = NULL;
 
 	if (foreignerId == 0)
 		return;
@@ -1711,6 +1715,9 @@ void Diplomat::Execute_Proposal(const PLAYER_INDEX & sender,
 		{
 			AgreementMatrix::s_agreements.
 				CancelAgreement(sender, receiver, PROPOSAL_TREATY_DECLARE_WAR);
+	
+			Diplomat::GetDiplomat(sender).UpdateDesireWarWith(receiver);
+			Diplomat::GetDiplomat(receiver).UpdateDesireWarWith(sender);
 
 			// Maybe add to CancelAgreement as message from DB
 			SlicObject *so = new SlicObject("401WarOver");
@@ -1831,6 +1838,9 @@ void Diplomat::DeclareWar(const PLAYER_INDEX foreignerId)
 
 	player_ptr->CloseEmbassy(foreignerId);
 	foreigner_ptr->CloseEmbassy(m_playerId);
+
+	Diplomat::GetDiplomat(foreignerId).UpdateDesireWarWith(m_playerId);
+	UpdateDesireWarWith(foreignerId);
 }
 
 void Diplomat::SetEmbargo(const PLAYER_INDEX foreignerId, const bool state)
@@ -2040,7 +2050,7 @@ bool Diplomat::ExecuteThreat(const Threat & threat)
 	StringId strId;
 	sint32 regard_cost=0;
 	sint32 trust_cost=0;
-	char *str_buf = NULL;
+	const char *str_buf = NULL;
 
 	switch (threat.detail.type)
 	{
@@ -2064,6 +2074,9 @@ bool Diplomat::ExecuteThreat(const Threat & threat)
 		receiver_diplomat.GetCurrentDiplomacy(threat.senderId).GetPreemptiveAttackTrustCost(trust_cost);
 		trust_cost /= 2;
 		str_buf = "Threatened to declare war.";
+		break;
+	default:
+		Assert(false);
 		break;
 	}
 
@@ -2633,6 +2646,8 @@ void Diplomat::ExecuteResponse(const PLAYER_INDEX sender,
 			GEA_Player, receiver,
 			GEA_End);
 		break;
+	default:
+		Assert(false);
 	}
 }
 
@@ -3910,7 +3925,7 @@ StringId Diplomat::GetScienceAdvice(SlicContext & sc, StringId & advance_advice)
 
 	sint32 stop_researching_adv;
 	uint32 foreignerId;
-	for (foreignerId = 1; foreignerId < s_theDiplomats.size(); foreignerId)
+	for (foreignerId = 1; foreignerId < s_theDiplomats.size(); foreignerId++)
 	{
 		if (TestEffectiveRegard(foreignerId, ALLIED_REGARD))
 			continue;
@@ -5152,6 +5167,7 @@ void Diplomat::SendGreeting(const PLAYER_INDEX & foreignerId)
 	so->AddAction(buf);
 	g_slicEngine->Execute(so);
 }
+
 bool Diplomat::HasWarOrDesiresPreemptivelyWith(const PLAYER_INDEX foreignerId) const
 {
 	return g_player[m_playerId]->HasWarWith(foreignerId) || (/*m_personality->GetAlignmentEvil() || m_personality->GetTrustworthinessChaotic() &&*/ DesireWarWith(foreignerId));
@@ -5252,6 +5268,12 @@ void Diplomat::ComputeAllDesireWarWith()
 	}
 }
 
+void Diplomat::UpdateDesireWarWith(const PLAYER_INDEX foreignerId)
+{
+	m_desireWarWith[foreignerId] =
+		(foreignerId != m_playerId) && ComputeDesireWarWith(foreignerId);
+}
+
 sint32 Diplomat::GetWeakestEnemy() const
 {
 	sint32 weakestEnemy    = -1;
@@ -5283,6 +5305,9 @@ bool Diplomat::IsBestHotwarEnemy(const PLAYER_INDEX foreignerId) const
 {
 	Player *    foreigner_ptr = g_player[foreignerId];
 	if (foreigner_ptr == NULL)
+		return false;
+
+	if (!foreigner_ptr->HasContactWith(m_playerId))
 		return false;
 
 	DIPLOMATIC_STRENGTH lowest_relative_strength    = foreigner_ptr->GetRelativeStrength(m_playerId);
