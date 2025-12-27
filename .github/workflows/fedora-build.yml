@@ -24,30 +24,48 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 3. Konfiguration und Fixes für alte Bibliotheken
+      # 3. Konfiguration und Fixes
     - name: Configure and Fix
       run: |
-        # Autotools initialisieren (erzeugt aktuelle config.guess/sub/missing)
+        # Autotools initialisieren
         ./autogen.sh
 
-        # FIX: Die uralten Skripte in der FreeType-Lib durch neue ersetzen
+        # FIX 1: FreeType Configs (wie gehabt)
         echo "Patching FreeType configuration files..."
         cp ctp2_code/os/autoconf/config/config.guess ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/config.sub   ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/missing      ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/install-sh   ctp2_code/libs/freetype-1.3.1/
-
-        # Ausführbar machen sicherstellen
         chmod +x ctp2_code/libs/freetype-1.3.1/configure
         chmod +x ctp2_code/libs/freetype-1.3.1/missing
 
-        # Configure starten
-        # -fpermissive: Ignoriert veraltete C++ Syntax-Fehler
-        # -w: Unterdrückt Warnungen, damit das Log lesbar bleibt
+        # FIX 2: MD5 Kollisionen in 'anet' beheben
+        # Wir benennen die MD5-Funktionen im Code um, damit sie nicht mit System-Libs kollidieren
+        echo "Patching MD5 functions in anet..."
+        sed -i 's/MD5Init/CTP_MD5Init/g'       ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+        sed -i 's/MD5Update/CTP_MD5Update/g'   ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+        sed -i 's/MD5Final/CTP_MD5Final/g'     ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+        
+        sed -i 's/MD5Init/CTP_MD5Init/g'       ctp2_code/libs/anet/src/3rdparty/md5/md5.c
+        sed -i 's/MD5Update/CTP_MD5Update/g'   ctp2_code/libs/anet/src/3rdparty/md5/md5.c
+        sed -i 's/MD5Final/CTP_MD5Final/g'     ctp2_code/libs/anet/src/3rdparty/md5/md5.c
+
+        # Jetzt auch die Aufrufe in den tca-Dateien anpassen
+        sed -i 's/MD5Init/CTP_MD5Init/g'       ctp2_code/libs/anet/src/tca/tca.c
+        sed -i 's/MD5Update/CTP_MD5Update/g'   ctp2_code/libs/anet/src/tca/tca.c
+        sed -i 's/MD5Final/CTP_MD5Final/g'     ctp2_code/libs/anet/src/tca/tca.c
+        
+        sed -i 's/MD5Init/CTP_MD5Init/g'       ctp2_code/libs/anet/src/tca/tcapw.c
+        sed -i 's/MD5Update/CTP_MD5Update/g'   ctp2_code/libs/anet/src/tca/tcapw.c
+        sed -i 's/MD5Final/CTP_MD5Final/g'     ctp2_code/libs/anet/src/tca/tcapw.c
+
+        # Environment Variablen setzen
         export CFLAGS="-fpermissive -w"
         export CXXFLAGS="-fpermissive -w"
         
+        # Configure starten
         ./configure --prefix=/usr --enable-silent-rules
+
 
     # 4. Kompilieren
     - name: Compile
