@@ -1,6 +1,5 @@
 name: Build CTP2 for Fedora
 
-# Startet den Build manuell oder bei jedem Push
 on:
   workflow_dispatch:
   push:
@@ -9,57 +8,68 @@ on:
 jobs:
   build-fedora:
     runs-on: ubuntu-latest
-    # Wir führen den gesamten Job IN einem Fedora-Container aus
     container:
       image: fedora:latest
 
     steps:
-    # 1. System aktualisieren und Abhängigkeiten installieren
-    - name: Install Build Dependencies
+    # 1. System vorbereiten
+    - name: Install Dependencies
       run: |
         dnf -y update
         dnf -y install git gcc-c++ make cmake automake autoconf libtool \
         SDL2-devel SDL2_mixer-devel SDL2_image-devel SDL2_ttf-devel \
-        byacc flex tar yasm unzip
+        byacc flex tar yasm unzip which
 
-    # 2. Quellcode auschecken
+    # 2. Code laden
     - name: Checkout Code
       uses: actions/checkout@v4
-    # 3. Build-System konfigurieren
-    - name: Configure
+
+    # 3. Konfiguration und Fixes für alte Bibliotheken
+    - name: Configure and Fix
       run: |
+        # Autotools initialisieren (erzeugt aktuelle config.guess/sub/missing)
         ./autogen.sh
-        
-        # FIX: Die uralten Config-Dateien von FreeType aktualisieren
-        # Wir kopieren die frischen Dateien vom Hauptspiel in den Bibliotheks-Ordner
-        echo "Updating FreeType config files..."
+
+        # FIX: Die uralten Skripte in der FreeType-Lib durch neue ersetzen
+        echo "Patching FreeType configuration files..."
         cp ctp2_code/os/autoconf/config/config.guess ctp2_code/libs/freetype-1.3.1/
-        cp ctp2_code/os/autoconf/config/config.sub ctp2_code/libs/freetype-1.3.1/
-        cp ctp2_code/os/autoconf/config/missing ctp2_code/libs/freetype-1.3.1/
-        cp ctp2_code/os/autoconf/config/install-sh ctp2_code/libs/freetype-1.3.1/
+        cp ctp2_code/os/autoconf/config/config.sub   ctp2_code/libs/freetype-1.3.1/
+        cp ctp2_code/os/autoconf/config/missing      ctp2_code/libs/freetype-1.3.1/
+        cp ctp2_code/os/autoconf/config/install-sh   ctp2_code/libs/freetype-1.3.1/
+
+        # Ausführbar machen sicherstellen
+        chmod +x ctp2_code/libs/freetype-1.3.1/configure
+        chmod +x ctp2_code/libs/freetype-1.3.1/missing
+
+        # Configure starten
+        # -fpermissive: Ignoriert veraltete C++ Syntax-Fehler
+        # -w: Unterdrückt Warnungen, damit das Log lesbar bleibt
+        export CFLAGS="-fpermissive -w"
+        export CXXFLAGS="-fpermissive -w"
         
-        # Jetzt die Konfiguration starten
-        ./configure --prefix=/usr
-        
-    # 4. Kompilieren (nutzt alle verfügbaren Kerne)
+        ./configure --prefix=/usr --enable-silent-rules
+
+    # 4. Kompilieren
     - name: Compile
       run: |
         make -j$(nproc)
 
-    # 5. Ordner für das Artefakt vorbereiten
-    # Wir kopieren nur das Nötigste: Die neue EXE und die neuen Daten
-    - name: Prepare Artifact Folder
+    # 5. Paket schnüren
+    - name: Prepare Artifact
       run: |
-        mkdir -p dist/ctp2_program/ctp
+        mkdir -p dist
         
-        # Die ausführbare Datei
+        # Das kompilierte Spiel
         cp ctp2 dist/
         
-        # Die Apolyton-spezifischen Daten (wichtig für UI/Mods)
-        # Falls der Ordner ctp2_data existiert, kopieren wir ihn
+        # Die Daten-Dateien (falls vorhanden)
         if [ -d "ctp2_data" ]; then cp -r ctp2_data dist/; fi
+        
+        # Mapgen Bibliotheken (falls shared libs gebaut wurden)
+        mkdir -p dist/libs
+        find . -name "*.so" -exec cp {} dist/libs/ \; || true
 
-    # 6. Ergebnis als ZIP hochladen
+    # 6. Hochladen
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v4
       with:
