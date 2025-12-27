@@ -24,38 +24,37 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 3. Konfiguration und Patches
+   # 3. Konfiguration und Patches
     - name: Configure and Fix
       run: |
-        # Autotools ausführen (erzeugt frische config.guess/sub/missing Skripte)
         ./autogen.sh
 
-        # FIX 1: Veraltete FreeType-Konfigurationsdateien ersetzen
-        echo "Patching FreeType configuration files..."
+        # FreeType Fix
+        echo "Patching FreeType..."
         cp ctp2_code/os/autoconf/config/config.guess ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/config.sub   ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/missing      ctp2_code/libs/freetype-1.3.1/
         cp ctp2_code/os/autoconf/config/install-sh   ctp2_code/libs/freetype-1.3.1/
-        
-        # Ausführrechte sicherstellen
         chmod +x ctp2_code/libs/freetype-1.3.1/configure
         chmod +x ctp2_code/libs/freetype-1.3.1/missing
 
-        # FIX 2: MD5-Namenskollisionen im Netzwerk-Code beheben
-        # Wir benennen alle MD5-Funktionen um (MD5Init -> CTP_MD5Init),
-        # damit sie nicht mit Systembibliotheken (openssl etc.) kollidieren.
-        echo "Patching MD5 functions in anet..."
+        # MD5 Rename Fix (CTP_MD5...)
+        echo "Renaming MD5 functions..."
         find ctp2_code/libs/anet -name "*.[ch]" -exec sed -i 's/MD5Init/CTP_MD5Init/g' {} +
         find ctp2_code/libs/anet -name "*.[ch]" -exec sed -i 's/MD5Update/CTP_MD5Update/g' {} +
         find ctp2_code/libs/anet -name "*.[ch]" -exec sed -i 's/MD5Final/CTP_MD5Final/g' {} +
 
-        # Compiler-Flags setzen (wichtig für alten Code auf neuem GCC)
-        # -fpermissive: Erlaubt alten, unsicheren C++ Code
-        # -w: Unterdrückt Warnungen (Log bleibt sauber)
-        export CFLAGS="-fpermissive -w"
-        export CXXFLAGS="-fpermissive -w"
+        # PROTO_LIST Fix (Der entscheidende neue Teil!)
+        # Wir entfernen das PROTO_LIST Makro in md5.h komplett, damit der Compiler Standard-C sieht.
+        echo "Fixing PROTO_LIST in md5.h..."
+        sed -i 's/PROTO_LIST ((MD5_CTX \*))/(MD5_CTX *)/g' ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+        sed -i 's/PROTO_LIST ((unsigned char \*, unsigned int))/(unsigned char *, unsigned int)/g' ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+        sed -i 's/PROTO_LIST ((unsigned char \[16\], MD5_CTX \*))/(unsigned char [16], MD5_CTX *)/g' ctp2_code/libs/anet/src/3rdparty/md5/md5.h
+
+        # Zusätzlich globale Flags
+        export CFLAGS="-fpermissive -w -D__STDC__=1"
+        export CXXFLAGS="-fpermissive -w -D__STDC__=1"
         
-        # Konfiguration starten
         ./configure --prefix=/usr --enable-silent-rules
 
     # 4. Kompilieren (nutzt alle CPU-Kerne)
