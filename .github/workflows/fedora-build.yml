@@ -20,7 +20,7 @@ jobs:
         dnf -y update
         dnf -y install git gcc-c++ make cmake automake autoconf libtool \
         SDL2-devel SDL2_mixer-devel SDL2_image-devel SDL2_ttf-devel \
-        byacc flex tar yasm
+        byacc flex tar yasm unzip
 
     # 2. Quellcode auschecken
     - name: Checkout Code
