@@ -1,0 +1,60 @@
+name: Build CTP2 for Fedora
+
+# Startet den Build manuell oder bei jedem Push
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build-fedora:
+    runs-on: ubuntu-latest
+    # Wir führen den gesamten Job IN einem Fedora-Container aus
+    container:
+      image: fedora:latest
+
+    steps:
+    # 1. System aktualisieren und Abhängigkeiten installieren
+    - name: Install Build Dependencies
+      run: |
+        dnf -y update
+        dnf -y install git gcc-c++ make cmake automake autoconf libtool \
+        SDL2-devel SDL2_mixer-devel SDL2_image-devel SDL2_ttf-devel \
+        byacc flex tar yasm
+
+    # 2. Quellcode auschecken
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 3. Build-System konfigurieren (Autotools)
+    - name: Configure
+      run: |
+        ./autogen.sh
+        # CFLAGS optimieren den Build leicht, sind aber optional
+        ./configure --prefix=/usr
+
+    # 4. Kompilieren (nutzt alle verfügbaren Kerne)
+    - name: Compile
+      run: |
+        make -j$(nproc)
+
+    # 5. Ordner für das Artefakt vorbereiten
+    # Wir kopieren nur das Nötigste: Die neue EXE und die neuen Daten
+    - name: Prepare Artifact Folder
+      run: |
+        mkdir -p dist/ctp2_program/ctp
+        
+        # Die ausführbare Datei
+        cp ctp2 dist/
+        
+        # Die Apolyton-spezifischen Daten (wichtig für UI/Mods)
+        # Falls der Ordner ctp2_data existiert, kopieren wir ihn
+        if [ -d "ctp2_data" ]; then cp -r ctp2_data dist/; fi
+
+    # 6. Ergebnis als ZIP hochladen
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CTP2-Apolyton-Fedora
+        path: dist/
+        compression-level: 6
