@@ -68,18 +68,29 @@ jobs:
       run: |
         make -j$(nproc)
 
-    # 5. Artefakte verpacken
+    # 5. Artefakte verpacken (Korrigierter Pfad!)
     - name: Prepare Artifact
       run: |
         mkdir -p dist
         
-        # Das Spiel
-        cp ctp2 dist/
+        # Wir suchen die Datei 'ctp2' (executable), egal wo sie liegt
+        # Meistens in ctp2_code/ oder .libs/
+        EXE_PATH=$(find . -name "ctp2" -type f -executable | head -n 1)
+        
+        if [ -z "$EXE_PATH" ]; then
+            echo "FEHLER: Datei 'ctp2' wurde nicht gefunden!"
+            # Debugging: Zeige alle Dateien an, um zu sehen wo sie steckt
+            find . -name "ctp2*"
+            exit 1
+        else
+            echo "Gefunden: $EXE_PATH"
+            cp "$EXE_PATH" dist/
+        fi
         
         # Daten
         if [ -d "ctp2_data" ]; then cp -r ctp2_data dist/; fi
         
-        # Libraries (falls benötigt)
+        # Libraries (optional)
         mkdir -p dist/libs
         find . -name "*.so" -exec cp {} dist/libs/ \; || true
 
