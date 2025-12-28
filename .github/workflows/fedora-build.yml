@@ -69,11 +69,16 @@ jobs:
         export CXXFLAGS="-O3 $LINKER_FLAG -fpermissive -w -DPROTOTYPES=1"
         
         ./configure --prefix=/usr --enable-silent-rules
-
-    # 4. Kompilieren
+   # 4. Kompilieren (mit Retry für Race-Conditions)
     - name: Compile
       run: |
-        make -j$(nproc)
+        echo "Starting parallel build..."
+        # Wir probieren es erst schnell (parallel)
+        if ! make -j$(nproc); then
+            echo "Parallel build failed (Race Condition known issue). Retrying single-threaded..."
+            # Wenn das fehlschlägt, machen wir es langsam und sicher (Single Core)
+            make -j1
+        fi
 
     # 5. Artefakte vorbereiten (Struktur wie Spiel erwartet)
     - name: Prepare Artifact
